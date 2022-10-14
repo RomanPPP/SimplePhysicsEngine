@@ -70,14 +70,14 @@ class Box {
     this.RS = m3.identity();
     this.pos = [0, 0, 0];
     this.points = [
-      [-a, -b, -c],
-      [a, -b, -c],
-      [a, b, -c],
-      [-a, b, -c],
-      [-a, -b, c],
-      [a, -b, c],
-      [a, b, c],
-      [-a, b, c],
+      [-a/2, -b/2, -c/2],
+      [a/2, -b/2, -c/2],
+      [a/2, b/2, -c/2],
+      [-a/2, b/2, -c/2],
+      [-a/2, -b/2, c/2],
+      [a/2, -b/2, c/2],
+      [a/2, b/2, c/2],
+      [-a/2, b/2, c/2],
     ];
     this.indices = [
       [3, 2, 1, 0], // -z

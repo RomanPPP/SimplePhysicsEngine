@@ -65,13 +65,13 @@ export default class Island {
         vec.dot(J[1], body1.angularV) +
         vec.dot(J[2], body2.velocity) +
         vec.dot(J[3], body2.angularV);
-      this.JV[i] = () => -rv + b * 0.015;
+      this.JV[i] = () => -rv //+ b * 0.015;
 
       /*this.JpV[i] = () => -vec.dot(J[0], body1.pseudoVelocity) -
                             vec.dot(J[1], body1.pseudoAngularV) -
                             vec.dot(J[2], body2.pseudoVelocity) -
                            vec.dot(J[3], body2.pseudoAngularV) - constraint.bias/deltaTime */
-      this.JpV[i] = () => b;
+      this.JpV[i] = () => -rv + b 
     }
   }
   getJMJ() {

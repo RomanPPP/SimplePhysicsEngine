@@ -20,6 +20,25 @@ const findClosestFace = (collider, normal) => {
   return faceIndices.map((i) => m4.transformPoint(m, collider.points[i]));
 };
 
+const pointOnPlaneProjection = (plane, point) =>{
+  
+  const [origin, normal] = plane
+  const fromPointToOrigin = diff(point, origin)
+  const projAlongNormal = dot(normal, fromPointToOrigin)
+
+  return diff(point, scale(normal, projAlongNormal))
+}
+const clipPointsBehindPlane = (plane, points) =>{
+  const [origin, normal] = plane
+
+  return points.filter( point => dot(normal, diff(point, origin)) > 0)
+}
+
+const get2DcoordsOnPlane = (i,j, point) =>{
+  
+  return [dot(i, point), dot(j, point)]
+}
+
 function update_simplex3(a, b, c, d, search_dir, simp_dim) {
   const n = cross(diff(this.b, this.a), diff(this.c, this.a));
   const AO = scale(this.a, -1);
@@ -114,7 +133,7 @@ function gjk(body1, body2) {
   this.originsMap.set(this.b, [b_origin1, b_origin2]);
 
   if (dot(this.b, this.search_dir) < 0) {
-    return false;
+    return null;
   }
 
   this.search_dir = cross(
@@ -137,7 +156,7 @@ function gjk(body1, body2) {
     this.a = diff(a_origin2, a_origin1);
 
     this.originsMap.set(this.a, [a_origin1, a_origin2]);
-    if (dot(this.a, this.search_dir) < 0) return false;
+    if (dot(this.a, this.search_dir) < 0) return null;
 
     this.simp_dim++;
     if (this.simp_dim === 3) {
@@ -146,6 +165,7 @@ function gjk(body1, body2) {
       return EPA(this.a, this.b, this.c, this.d, this.originsMap, body1, body2);
     }
   }
+  return null
 }
 
 const baricentric = (face, point) => {
@@ -277,7 +297,7 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
 
       if (isNaN(result[0] + result[1] + result[2])) {
         console.log("no conv");
-        return false;
+        return null;
       }
 
       let PA = sum(
@@ -298,9 +318,9 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
       const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
       const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
       const n = normalize(scale(face[3], -dot(p, search_dir)));
-      if (norm(n) < 0.01) return false;
+      if (norm(n) < 0.01) return null;
       const penDepth = -dot(diff(PB, PA), n);
-      const contactFace1 = findClosestFace(coll1, n);
+      const contactFace1 = findClosestFace(coll1, scale(n, -1));
       const contactFace2 = findClosestFace(coll2, n);
       const contact = new Contact(raLocal, rbLocal, n, body1, body2);
       contact.PA = PA;
@@ -310,6 +330,8 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
       contact.penDepth = penDepth;
       contact.contactFace1 = contactFace1;
       contact.contactFace2 = contactFace2;
+      const plane = [scale(sum(PA, PB), 0.5), normalize(diff(PB, PA))]
+      contact.plane = plane
       return contact;
     }
 
@@ -373,6 +395,7 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
     }
   }
   console.log("no conv");
-  return false;
+  return null;
 };
-export default gjk.bind({});
+const _gjk = (...args) => gjk.bind({})(...args)
+export { _gjk as gjk, pointOnPlaneProjection, clipPointsBehindPlane, get2DcoordsOnPlane};

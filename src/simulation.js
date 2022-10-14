@@ -6,7 +6,7 @@ import {
   warmStart,
   solvePosition,
 } from "./constraints";
-import gjk from "./gjk";
+import {gjk} from "./gjk";
 
 import Manifold from "./manifold";
 import Island from "./island";
@@ -82,8 +82,10 @@ export default class Simulation {
     this.updateCollisions();
     let manifolds = this.collisionManifolds.values();
     for (let manifold of manifolds) manifold.update();
-
+/*  
     manifolds = this.collisionManifolds.values();
+
+   
     const system = new Island();
     for (let manifold of manifolds) {
       const contacts = manifold.contacts;
@@ -92,7 +94,7 @@ export default class Simulation {
       }
       system.addConstraint(...contacts);
     }
-   
+
     system.generateSystem(deltaTime);
 
     for (let i = 0, n = this.objects.length; i < n; i++) {
@@ -108,24 +110,30 @@ export default class Simulation {
     }
 
     manifolds = this.collisionManifolds.values();
-    for(const manifold of manifolds){
-        const {contacts} = manifold
-        if(contacts.length > 3){
-            contacts.forEach(contact => contact.updateEq())
-            const _system = new Island(...contacts)
-            _system.generateSystem(deltaTime)
-            const JMJ = _system.getJMJ();
-            const JpV = _system.getJpV();
-            const pLambda = GaussSeidel(JMJ, JpV, _system.constraints.length, 1e-7);
-            _system.applyResolvingPseudoImpulses(pLambda, deltaTime)
-        }
+    const positionSystem = new Island();
+    for (const manifold of manifolds) {
+      const { contacts } = manifold;
+      contacts.forEach((contact) => contact.updateEq());
+      if (contacts.length > 2) {
+        
+        positionSystem.addConstraint(...contacts);
+      }
     }
-    
-    
+    positionSystem.generateSystem(deltaTime);
+    const JMJ = positionSystem.getJMJ();
+    const JpV = positionSystem.getJpV();
+    const pLambda = GaussSeidel(
+      JMJ,
+      JpV,
+      positionSystem.constraints.length,
+      1e-7
+    );
+    positionSystem.applyResolvingPseudoImpulses(pLambda, deltaTime);
 
     for (let i = 0, n = this.objects.length; i < n; i++) {
-      this.objects[i].integratePseudoVelocities(deltaTime)
-    }
-    //for(let i = 0; i<4; i++)
+      this.objects[i].integratePseudoVelocities(deltaTime);
+    }*/
+    //for(let i = 0; i<4; i++
+    
   }
 }
