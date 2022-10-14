@@ -105,7 +105,7 @@ defaultProgram.setContext(context).compileShaders().createUniformSetters();
 
 const box = new PrimitiveRenderer(createBox(1, 1, 1));
 
-const circle = new PrimitiveRenderer(createCircle(5, 10));
+const circle = new PrimitiveRenderer(createCircle(8, 4));
 
 const points = new PrimitiveRenderer({
   mode: gl.POINTS,
@@ -143,7 +143,7 @@ line
   .setProgramInfo(defaultProgram)
   .createBufferAttribData("a_position", "vec3", { location: 0 })
   .setOwnAttribute("a_position")
-  .bufferData("a_position", new Float32Array([0, 0, 0, 1, 2, 0]));
+  .bufferData("a_position", new Float32Array([0, 0, 0, 0, 1, 0]));
 
 points
   .setContext(context)
@@ -166,31 +166,48 @@ const uniforms = {
 import Simulation from "./src/simulation";
 import { Physics } from "./src/physics";
 import { Box } from "./src/collider";
+import { clipPointsBehindPlane, get2DcoordsOnPlane, pointOnPlaneProjection } from "./src/gjk";
 
 const sim = new Simulation();
 
-const floor = { physics: new Physics(new Box(100, 2, 100)), sprite: box };
+const floor = { physics: new Physics(new Box(100, 6, 100)), sprite: box };
 const cube = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
 const cube2 = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
-cube.physics.translate([0, 5, 0]);
+cube.physics.translate([0, 1, 0]);
 cube2.physics.translate([0, 10, 0]);
-//cube.physics.rotate([Math.PI/4,Math.PI/4,Math.PI/4])
+cube.physics.rotate([Math.PI/4,Math.PI/4,Math.PI/4])
 cube.physics.addAcceleration([0, -9.8, 0]);
 
 cube2.physics.addAcceleration([0, -9.8, 0]);
 
 sim.addObject(floor.physics);
 sim.addObject(cube.physics);
-sim.addObject(cube2.physics);
+//sim.addObject(cube2.physics);
 
 floor.physics.setMass(1000000000);
 
-const objects = [floor, cube, cube2];
-
-floor.physics.translate([0, -2, 0]);
+const objects = [floor, cube];
+console.log(Math.acos(-1))
+floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
 
-//document.addEventListener('click', sim.tick.bind(sim, 0.015))
+
+
+const p = [[5,5,-5], [-5,-5,3]]
+const plane = [[0,0,0], [0,0,1]] 
+
+
+
+
+
+const projections = p.map(point => pointOnPlaneProjection(plane, point))
+
+const _i = vector.normalize(vector.diff(projections[0], plane[0]))
+const _j = vector.normalize(vector.cross(plane[1], _i))
+
+console.log(_i, _j, vector.dot(_i, _j))
+const _2d = projections.map(p => get2DcoordsOnPlane(_i, _j, p))
+console.log(_2d)
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
 let i = 0;
@@ -209,10 +226,12 @@ const loop = () => {
   cameraMatrix = m4.yRotate(cameraMatrix, cRot[1]);
   cameraMatrix = m4.xRotate(cameraMatrix, cRot[0]);
   i += 0.001;
-
+  
+  
   const manifolds = sim.collisionManifolds.values();
   for (const manifold of manifolds) {
     manifold.contacts.forEach((contact) => {
+      const {contactFace1, contactFace2, plane} = contact
       points
         .draw({
           u_matrix: m4.translation(...contact.PA),
@@ -221,10 +240,38 @@ const loop = () => {
         .draw({
           u_matrix: m4.translation(...contact.PB),
           u_color: [1, 1, 0, 1],
+        }, cameraMatrix)
+        .draw({
+          u_matrix: m4.translation(...contact.plane[0]),
+          u_color: [0.1, 0.1, 0.2, 1],
+        }, cameraMatrix)
+        .draw({
+          u_matrix: m4.translation(...vector.sum(contact.plane[0], contact.plane[1])),
+          u_color: [0.1, 0.1, 0.2, 1],
         }, cameraMatrix);
+        
+        /*([...contactFace1, ...contactFace2]).forEach(p =>{
+          
+          points.draw({
+            u_matrix: m4.translation(...p),
+            u_color: [0.0, 0.5, 0.5, 1],
+          }, cameraMatrix)
+        })
+
+        const _cliped = [...clipPointsBehindPlane(plane, contactFace1), ...clipPointsBehindPlane(plane, contactFace2)]
+        _cliped.forEach(p =>{
+          
+          points.draw({
+            u_matrix: m4.translation(...p),
+            u_color: [0.5, 0.5, 0.5, 1],
+          }, cameraMatrix)
+        })*/
+
+        
+        
     });
   }
-
+  
   objects.forEach((obj) => {
     const scale = vector.diff(
       obj.physics.collider.max,
@@ -233,26 +280,45 @@ const loop = () => {
     const u_matrix = m4.scale(obj.physics.collider.getM4(), ...scale);
     obj.sprite.draw({ u_color: [1, 0, 1, 1], u_matrix }, cameraMatrix);
   });
-
+  
+  p.forEach(p => points.draw({u_matrix : m4.translation(...p), u_color : [1,0,0,1]}, cameraMatrix))
+  projections.forEach(p => points.draw({u_matrix : m4.translation(...p), u_color : [1,1,0,1]}, cameraMatrix))
+  _2d.forEach(_p => points.draw({u_matrix : m4.translation(_p[0],0,_p[1]), u_color : [0,1,0,1]}, cameraMatrix));
+  ([_i, _j]).forEach(_p => points.draw({u_matrix : m4.translation(..._p), u_color : [0,0,0,1]}, cameraMatrix))
   circle.draw(
     {
-      u_matrix: m4.translation(0, 0, 0),
+      u_matrix: m4.rotation(Math.PI/2,0,0),
+      u_color: [1, 0.5, 0.1, 1],
+      u_worldViewPosition: cameraMatrix,
+    },
+    cameraMatrix
+  )
+  .draw(
+    {
+      u_matrix: m4.identity(),
       u_color: [1, 0.5, 0.1, 1],
       u_worldViewPosition: cameraMatrix,
     },
     cameraMatrix
   );
-
-  line.draw(
+  points.draw(
     {
-      u_matrix: m4.translation(0, 0, 0),
-      u_color: [1, 0, 1, 1],
+      u_matrix: m4.identity(),
+      u_color: [0, 0.5, 0.1, 1],
       u_worldViewPosition: cameraMatrix,
     },
     cameraMatrix
   );
+  /*line.draw(
+    {
+      u_matrix: m4.rotation(...vector.diff([0,-1,0], [1,0,0])),
+      u_color: [1, 0, 1, 1],
+      u_worldViewPosition: cameraMatrix,
+    },
+    cameraMatrix
+  );*/
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop)
 };
 loop();
