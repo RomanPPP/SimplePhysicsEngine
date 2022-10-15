@@ -39,6 +39,13 @@ const get2DcoordsOnPlane = (i,j, point) =>{
   return [dot(i, point), dot(j, point)]
 }
 
+
+const sutherlandHodgman = (S, C) =>{
+  
+} 
+
+
+
 function update_simplex3(a, b, c, d, search_dir, simp_dim) {
   const n = cross(diff(this.b, this.a), diff(this.c, this.a));
   const AO = scale(this.a, -1);
