@@ -4,10 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
-    "start": "webpack --watch --mode development",
-    "start:dev": "webpack-dev-server --watch"
+    "test": "webpack --config webpack.test.js",
+    "start": "webpack  --config ./webpack.dev.js --watch",
+    "build" : "webpack --config ./webpack.prod.js "
   },
   "author": "",
   "license": "ISC",
