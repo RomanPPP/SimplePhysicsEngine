@@ -3,6 +3,21 @@ const isInside = (p1, p2, q) => {
   return R <= 0;
 };
 
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+
+const isInClockwise = (p1, p2, p3) => {
+  const det =
+    p2[0] * p3[1] +
+    p3[0] * p1[1] +
+    p1[0] * p2[1] -
+    p1[0] * p1[1] -
+    p3[0] * p2[1] -
+    p1[0] * p3[1];
+
+  if(det < 0) return 1
+  return -1
+};
+
 const computeIntersection = (p1, p2, p3, p4) => {
   if (p2[0] - p1[0] === 0) {
     const x = p1[0];
@@ -36,18 +51,18 @@ const computeIntersection = (p1, p2, p3, p4) => {
   return [x, y];
 };
 
-const clip = (A, B) => {
+const clip = (A, B, dir1 = 1, dir2 = 1) => {
   let result = [...A];
 
-  for (let i = 0, n = B.length; i < n; i++) {
+  for (let i = 0, n = B.length; i < n; i ++) {
     const next = [...result];
     result = [];
-    const aEdge1 = B.at(i - 1);
-    const aEdge2 = B.at(i);
+    const aEdge1 = B.at((i - 1) * dir1);
+    const aEdge2 = B.at(i * dir1);
 
     for (let j = 0, _n = next.length; j < _n; j++) {
-      const bEdge1 = next.at(j - 1);
-      const bEdge2 = next.at(j);
+      const bEdge1 = next.at((j - 1) * dir2);
+      const bEdge2 = next.at(j * dir2);
 
       if (isInside(aEdge1, aEdge2, bEdge2)) {
         if (!isInside(aEdge1, aEdge2, bEdge1)) {
@@ -73,7 +88,7 @@ const clip = (A, B) => {
       }
     }
   }
-  return result
+  return result;
 };
 
-export { isInside, computeIntersection, clip };
+export { isInside, computeIntersection, clip, isInClockwise };
