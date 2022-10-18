@@ -166,7 +166,7 @@ const uniforms = {
 import Simulation from "./src/simulation";
 import { Physics } from "./src/physics";
 import { Box } from "./src/collider";
-import { clipPointsBehindPlane, get2DcoordsOnPlane, pointOnPlaneProjection } from "./src/gjk";
+import { clipPointsBehindPlane, get2DcoordsOnPlane, pointOnPlaneProjection, pointOnPlaneProjectionDir } from "./src/gjk";
 import { clip, isInClockwise } from "./src/clipping";
 
 const sim = new Simulation();
@@ -174,9 +174,9 @@ const sim = new Simulation();
 const floor = { physics: new Physics(new Box(100, 6, 100)), sprite: box };
 const cube = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
 const cube2 = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
-cube.physics.translate([0, 1 - 10, 0]);
+cube.physics.translate([0, 2 , 0]);
 cube2.physics.translate([0, 10, 0]);
-cube.physics.rotate([Math.PI/4,Math.PI/4,Math.PI/4])
+//cube.physics.rotate([Math.PI/4,Math.PI/4,Math.PI/4])
 cube.physics.addAcceleration([0, -9.8, 0]);
 
 cube2.physics.addAcceleration([0, -9.8, 0]);
@@ -185,17 +185,14 @@ sim.addObject(floor.physics);
 sim.addObject(cube.physics);
 //sim.addObject(cube2.physics);
 
-floor.physics.setMass(1000000000);
+floor.physics.setMass(100);
 
 const objects = [floor, cube];
 console.log(Math.acos(-1))
-floor.physics.translate([0, -3 - 10, 0]);
+floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
 
 
-
-const p = [[5,5,-5], [-5,-5,3]]
-const plane = [[0,0,0], [0,0,1]] 
 
 
 
@@ -209,6 +206,12 @@ const _j = vector.normalize(vector.cross(plane[1], _i))
 console.log(_i, _j, vector.dot(_i, _j))
 const _2d = projections.map(p => get2DcoordsOnPlane(_i, _j, p))
 console.log(_2d)*/
+
+/*
+const point = [5,0,5]
+const plane = [[0,0,0], [0,0,1]]
+const proj = pointOnPlaneProjectionDir(plane, point, [0,-1,-1])
+*/
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
 let i = 0;
@@ -230,64 +233,36 @@ const loop = () => {
   
   
   const manifolds = sim.collisionManifolds.values();
+  
   for (const manifold of manifolds) {
     manifold.contacts.forEach((contact) => {
-      const {contactFace1, contactFace2, plane} = contact
+      const {contactFace1, contactFace2, plane, features, _3d, projections1, projections2} = contact
       points
         .draw({
-          u_matrix: m4.translation(...contact.PA),
-          u_color: [0, 1, 0, 1],
-        }, cameraMatrix)
-        .draw({
-          u_matrix: m4.translation(...contact.PB),
-          u_color: [1, 1, 0, 1],
-        }, cameraMatrix)
-        .draw({
           u_matrix: m4.translation(...contact.plane[0]),
-          u_color: [0.1, 0.1, 0.2, 1],
+          u_color: [0.6, 0.6, 0.0, 1],
         }, cameraMatrix)
         .draw({
           u_matrix: m4.translation(...vector.sum(contact.plane[0], contact.plane[1])),
-          u_color: [0.1, 0.1, 0.2, 1],
+          u_color: [0.5, 0.1, 0.2, 1],
         }, cameraMatrix);
         
-        const projections1 = contactFace1.map(point => pointOnPlaneProjection(plane, point))
-        const projections2 = contactFace2.map(point => pointOnPlaneProjection(plane, point))
-
-        
-        const _i = vector.normalize(vector.diff(projections1[0], plane[0]))
-        const _j = vector.normalize(vector.cross(plane[1], _i))
-
-        
-        const _2d1 = projections1.map(p => get2DcoordsOnPlane(_i, _j, p))
-        const _2d2 = projections2.map(p => get2DcoordsOnPlane(_i, _j, p))
-        
-        const dir1 = isInClockwise(..._2d1)
-        const dir2 = isInClockwise(..._2d2)
-        const clipped = clip(_2d1, _2d2, dir1, dir2)
-        clipped.forEach(p =>{
+       
+        features.forEach(f =>{
           
           points.draw({
-            u_matrix: m4.translation(p[0], 0, p[1]),
+            u_matrix: m4.translation(...f.PA),
             u_color: [0.5, 0.5, 0.5, 1],
           }, cameraMatrix)
-        })
-        /*([...contactFace1, ...contactFace2]).forEach(p =>{
-          
-          points.draw({
-            u_matrix: m4.translation(...p),
-            u_color: [0.0, 0.5, 0.5, 1],
+          .draw({
+            u_matrix: m4.translation(...f.PB),
+            u_color: [0.0, 0.0, 0.0, 1],
           }, cameraMatrix)
         })
+       
+        
 
-        const _cliped = [...clipPointsBehindPlane(plane, contactFace1), ...clipPointsBehindPlane(plane, contactFace2)]
-        _cliped.forEach(p =>{
-          
-          points.draw({
-            u_matrix: m4.translation(...p),
-            u_color: [0.5, 0.5, 0.5, 1],
-          }, cameraMatrix)
-        })*/
+       
 
         
         
@@ -327,7 +302,22 @@ const loop = () => {
       u_worldViewPosition: cameraMatrix,
     },
     cameraMatrix
-  );
+  )
+  /*.draw(
+    {
+      u_matrix: m4.translation(...proj),
+      u_color: [0, 0.0, 0.0, 1],
+      u_worldViewPosition: cameraMatrix,
+    },
+    cameraMatrix
+  ).draw(
+    {
+      u_matrix: m4.translation(...point),
+      u_color: [0,1.0, 0.1, 1],
+      u_worldViewPosition: cameraMatrix,
+    },
+    cameraMatrix
+  );*/
   /*line.draw(
     {
       u_matrix: m4.rotation(...vector.diff([0,-1,0], [1,0,0])),
@@ -336,7 +326,7 @@ const loop = () => {
     },
     cameraMatrix
   );*/
-
+    
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   requestAnimationFrame(loop)
 };
