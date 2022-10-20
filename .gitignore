@@ -2,5 +2,6 @@ node_modules
 
 test.js
 dist/test.js
-src/terrain.js
-src/noise.js
+src/physics/terrain.js
+src/physics/noise.js
+src/game

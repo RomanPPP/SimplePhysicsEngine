@@ -3,18 +3,45 @@ import { vector, m3 } from "math";
 const { dot, cross, normalize, diff, scale, norm, sum } = vector;
 
 class Constraint {
-  constructor(body1, body2) {
+  constructor({body1, body2, n, ra, rb}) {
     this.bias = null;
-    this.n = null;
+    this.n = n;
     this.J = null;
     this.invMass1 = null;
     this.JM = null;
     this.body1 = body1;
     this.body2 = body2;
-    this.ra = null;
-    this.rb = null;
+    this.ra = ra;
+    this.rb = rb;
   }
-  updateEq() {}
+  updateEq() {
+    const {body1, body2, n, ra, rb}  = this
+    this.J = [
+      scale(n, -1),
+      cross(n, ra),
+      n,
+      cross(rb, n),
+    ];
+    const I1 = body1.inverseInertia;
+    const I2 =body2.inverseInertia;
+    const M1 = body1.inverseMass;
+    const M2 = body2.inverseMass;
+    this.JM = [
+      scale(this.J[0], M1),
+      m3.transformPoint(I1, this.J[1]),
+      scale(this.J[2], M2),
+      m3.transformPoint(I2, this.J[3]),
+    ];
+    this.effMass =
+      M1 + dot(this.JM[0], this.J[1]) + M2 + dot(this.JM[3], this.J[3]);
+    
+    
+    this.relativeVelocity = diff(
+      sum(body2.velocity, cross(body2.angularV, rb)),
+      sum(body1.velocity, cross(body1.angularV, ra))
+      );
+    this.relativeVelocityNormalProjection = dot(this.relativeVelocity, n)
+  }
   applyResolvingImpulse(lambda) {}
 }
 const clamp = (v, min, max) => {
@@ -25,41 +52,17 @@ const clamp = (v, min, max) => {
   return min;
 };
 
-const frictionSolver = (contact, lambda, body1, body2) => {
-  contact.relVelocity = sum(body2.velocity, cross(body2.angularV, contact.rb));
-  contact.relVelocity = diff(contact.relVelocity, body1.velocity);
-  contact.relVelocity = diff(
-    contact.relVelocity,
-    cross(body1.angularV, contact.ra)
-  );
 
-  const mu = (body1.friction + body1.friction);
-  let fImpulse1 = -dot(contact.relVelocity, contact.fDir1) / contact.fEffMass1;
-  fImpulse1 = clamp(fImpulse1, -lambda * mu, lambda * mu);
-
-  let fImpulse2 = -dot(contact.relVelocity, contact.fDir2) / contact.fEffMass2;
-  fImpulse2 = clamp(fImpulse2, -lambda * mu, lambda * mu);
-
-  contact.accFI1 += fImpulse1;
-  contact.accFI2 += fImpulse2;
-
-  let fVec = sum(
-    scale(contact.fDir1, fImpulse1),
-    scale(contact.fDir2, fImpulse2)
-  );
-
-  body1.applyImpulse(scale(fVec, -1), contact.ra);
-  body2.applyImpulse(fVec, contact.rb);
-};
-class Contact extends Constraint {
-  constructor(raLocal, rbLocal, n, body1, body2) {
-    super(body1, body2);
-    this.ra = null;
-    this.rb = null;
-    this.PA = null;
-    this.PB = null;
+class ContactConstraint extends Constraint {
+  constructor({raLocal, rbLocal, ra, rb, PA, PB, n, penDepth, body1, body2, i, j}) {
+    
+    super({ra, rb, n, body1, body2});
+    this.ra = ra;
+    this.rb = rb;
+    this.PA = PA;
+    this.PB = PB;
     this.n = n;
-    this.penDepth = null;
+    this.penDepth = penDepth;
     this.initialVelProj = null;
     this.effMass = null;
     this.raLocal = raLocal;
@@ -68,18 +71,10 @@ class Contact extends Constraint {
     this.accI = 0;
     this.accFI1 = 0;
     this.accFI2 = 0;
-    try {
-      if (dot(this.n, [1, 0, 0]) < 0.5) {
-        this.fDir1 = cross(this.n, [1, 0, 0]);
-      } else {
-        this.fDir1 = cross(this.n, [0, 0, 1]);
-      }
-      this.fDir2 = normalize(cross(this.fDir1, this.n));
-      this.fDir1 = normalize(this.fDir1);
-    } catch (err) {
-      console.log(this.n);
-      throw new Error();
-    }
+    this.i = i
+    this.j = j
+    this.relativeVelocity = null
+    
   }
   _J() {
     return [
@@ -100,17 +95,18 @@ class Contact extends Constraint {
     this.penDepth = -dot(diff(PB, PA), this.n);
   }
   updateEq() {
-    this.updateContactData();
+    const {body1, body2, n, ra, rb}  = this
     this.J = [
-      scale(this.n, -1),
-      cross(this.n, this.ra),
-      this.n,
-      cross(this.rb, this.n),
+      scale(n, -1),
+      cross(n, ra),
+      n,
+      cross(rb, n),
     ];
-    const I1 = this.body1.getItensor();
-    const I2 = this.body2.getItensor();
-    const M1 = this.body1.inverseMass;
-    const M2 = this.body2.inverseMass;
+    
+    const I1 = body1.inverseInertia;
+    const I2 =body2.inverseInertia;
+    const M1 = body1.inverseMass;
+    const M2 = body2.inverseMass;
     this.JM = [
       scale(this.J[0], M1),
       m3.transformPoint(I1, this.J[1]),
@@ -119,64 +115,65 @@ class Contact extends Constraint {
     ];
     this.effMass =
       M1 + dot(this.JM[0], this.J[1]) + M2 + dot(this.JM[3], this.J[3]);
-    const tJ1 = [
-      this.fDir1,
-      cross(this.fDir1, this.ra),
-      scale(this.fDir1, -1),
-      cross(this.rb, this.fDir1),
-    ];
-    this.fEffMass1 =
-      this.body1.inverseMass +
-      m3.dot(m3.transformPoint(this.body1.inverseInertia, tJ1[1]), tJ1[1]) +
-      this.body2.inverseMass +
-      m3.dot(m3.transformPoint(this.body2.inverseInertia, tJ1[3]), tJ1[3]);
-    const tJ2 = [
-      scale(this.fDir2, -1),
-      cross(this.fDir2, this.ra),
-      this.fDir2,
-      cross(this.fDir2, this.rb),
-    ];
-    this.fEffMass2 =
-      this.body1.inverseMass +
-      m3.dot(m3.transformPoint(this.body1.inverseInertia, tJ2[1]), tJ2[1]) +
-      this.body2.inverseMass +
-      m3.dot(m3.transformPoint(this.body2.inverseInertia, tJ2[3]), tJ2[3]);
-    this.bias = this.penDepth;
+    
+    
+    this.relativeVelocity = diff(
+      sum(body2.velocity, cross(body2.angularV, rb)),
+      sum(body1.velocity, cross(body1.angularV, ra))
+      );
+    this.relativeVelocityNormalProjection = dot(this.relativeVelocity, n)
   }
   applyResolvingImpulse(lambda) {
     if (lambda < 0) return;
-
+    const max =  this.effMass * 10
+    lambda = Math.min(10 , lambda)
     this.body1.applyImpulse(scale(this.J[0], lambda), this.ra);
     this.body2.applyImpulse(scale(this.J[2], lambda), this.rb);
-    frictionSolver(this, lambda, this.body1, this.body2)
+    this.applyFrictionImpulse(lambda)
+  }
+  applyFrictionImpulse(lambda){
+    
+    const {ra, rb, body1, body2, i, j} = this
+    
+    const fConstraint1 = new Constraint({body1, body2,n : scale(i, -1), ra, rb })
+    const fConstraint2 = new Constraint({body1, body2, n : scale(j, -1), ra, rb})
+
+    fConstraint1.updateEq()
+    fConstraint2.updateEq()
+
+    let mu = (body1.friction + body1.friction)*10;
+    
+    let fImpulse1 = (fConstraint1.relativeVelocityNormalProjection - 0.01) / fConstraint1.effMass;
+    fImpulse1 = clamp(fImpulse1, -lambda * mu, lambda * mu);
+
+    let fImpulse2 =( fConstraint2.relativeVelocityNormalProjection -0.01)/ fConstraint2.effMass;
+
+    fImpulse2 = clamp(fImpulse2, -lambda * mu, lambda * mu);
+
+    this.accFI1 += fImpulse1;
+    this.accFI2 += fImpulse2;
+    
+    let fVec = sum(
+      scale(i, fImpulse1),
+      scale(j, fImpulse2)
+    );
+    
+    body1.applyImpulse(scale(fVec, -1), ra);
+    body2.applyImpulse(fVec, rb);
   }
   applyResolvingPseudoImpulse(lambda) {
     if (lambda < 0) return;
+    const max =  this.effMass * 10
     lambda = Math.min(10, lambda);
     this.body1.applyPseudoImpulse(scale(this.J[0], lambda), this.ra);
     this.body2.applyPseudoImpulse(scale(this.J[2], lambda), this.rb);
   }
-  generateFrictionConstraints() {
-    let fDir1, fDir2;
-
-    if (dot(this.n, [1, 0, 0]) < 0.5) {
-      fDir1 = cross(this.n, [1, 0, 0]);
-    } else {
-      fDir1 = cross(this.n, [0, 0, 1]);
-    }
-    fDir2 = normalize(cross(fDir1, this.n));
-    fDir1 = normalize(fDir1);
-
-    return [
-      new FrictionConstraint(fDir1, this.ra, this.rb, this.body1, this.body2),
-      new FrictionConstraint(fDir2, this.ra, this.rb, this.body1, this.body2),
-    ];
-  }
+  
 }
 class FrictionConstraint extends Constraint {
-  constructor(fDir, ra, rb, body1, body2) {
+  constructor({n, ra, rb, body1, body2}) {
     super(body1, body2);
-    this.fDir = fDir;
+    this.n = n;
     this.ra = ra;
     this.rb = rb;
   }
@@ -233,4 +230,4 @@ class Joint extends Constraint {
       dot(m3.transformPoint(I2, this.J[3]), this.J[3]);
   }
 }
-export { Contact, Constraint, Joint };
+export { ContactConstraint, Constraint, Joint };

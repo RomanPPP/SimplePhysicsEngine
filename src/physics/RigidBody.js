@@ -1,9 +1,9 @@
 import { EventEmitter } from "./eventEmitter";
 import { m3, vector, AABB } from "math";
 const { cross, scale, norm, sum, diff, chkV } = vector;
-const prec = 0.01;
-const stopTreshold = 0.001;
-class Physics extends EventEmitter {
+const prec = 0.0001;
+const stopTreshold = 0.0001;
+class RigidBody extends EventEmitter {
   constructor(collider) {
     super();
     this.static = false;
@@ -17,14 +17,14 @@ class Physics extends EventEmitter {
     this.angularV = [0, 0, 0];
     this.inverseInertia = collider.getInverseInertiaTensor(this.mass);
     this.id = 1;
-    this.friction = 0.1;
+    this.friction = 0.5;
     this.BVlink;
   }
   integrate(dt) {
     const { acceleration, velocity, translation } = this;
 
     this.translate(scale(this.velocity, dt));
-    const rotation = scale(this.angularV, dt * 0.5);
+    const rotation = scale(this.angularV, dt );
     if (norm(rotation) > stopTreshold) this.rotate(rotation);
     let deltaSpeed = scale(this.acceleration, dt);
     this.velocity = sum(this.velocity, deltaSpeed);
@@ -32,7 +32,7 @@ class Physics extends EventEmitter {
   integratePseudoVelocities(dt) {
     const translation = scale(this.pseudoVelocity, dt);
 
-    const rotation = scale(this.pseudoAngularV, dt * 0.5);
+    const rotation = scale(this.pseudoAngularV, dt );
     if (norm(translation) > stopTreshold) this.translate(translation);
 
     if (norm(rotation) > stopTreshold) this.rotate(rotation);
@@ -49,7 +49,7 @@ class Physics extends EventEmitter {
   integrateVelocities(dt) {
     const translation = scale(this.velocity, dt);
     if (norm(translation) > stopTreshold) this.translate(translation);
-    const rotation = scale(this.angularV, dt * 0.5);
+    const rotation = scale(this.angularV, dt );
     if (norm(translation) > stopTreshold) this.rotate(rotation);
   }
   integrateForces(dt) {
@@ -128,7 +128,7 @@ class Physics extends EventEmitter {
   }
 }
 
-class Player extends Physics {
+class Player extends RigidBody {
   constructor() {
     super(...arguments);
     this.friction = 10;
@@ -143,4 +143,4 @@ class Player extends Physics {
     );
   }
 }
-export { Physics, Player };
+export { RigidBody, Player };

@@ -1,6 +1,6 @@
 const isInside = (p1, p2, q) => {
   const R = (p2[0] - p1[0]) * (q[1] - p1[1]) - (p2[1] - p1[1]) * (q[0] - p1[0]);
-  return R <= 0;
+  return R <= 0 + 0.001;
 };
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1];

@@ -59,13 +59,14 @@ export default class Island {
         this.JMJ[k + j] = () => f1() + f2() + f3() + f4();
         this.JMJp[k + j] = () => fp1() + fp2() + fp3() + fp4();
       }
-      let b = Math.max(0, constraint.bias - 0.01) / deltaTime;
-      const rv =
-        vec.dot(J[0], body1.velocity) +
+      let b = Math.max(0, constraint.penDepth - 0.01) / deltaTime;
+
+      const rv = constraint.relativeVelocityNormalProjection
+      /*  vec.dot(J[0], body1.velocity) +
         vec.dot(J[1], body1.angularV) +
         vec.dot(J[2], body2.velocity) +
-        vec.dot(J[3], body2.angularV);
-      this.JV[i] = () => -rv //+ b * 0.015;
+        vec.dot(J[3], body2.angularV);*/
+      this.JV[i] = () => -rv //+ b* 0.125;
 
       /*this.JpV[i] = () => -vec.dot(J[0], body1.pseudoVelocity) -
                             vec.dot(J[1], body1.pseudoAngularV) -

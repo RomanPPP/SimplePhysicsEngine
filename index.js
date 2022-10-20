@@ -55,6 +55,7 @@ const mouseControls = {
 
     cRot[1] -= deltaX * 0.005;
     cRot[0] -= deltaY * 0.005;
+    cRot[0] = Math.max(-Math.PI/2, Math.min(Math.PI/2, cRot[0]))
   },
 };
 document.onkeydown = (e) => {
@@ -163,58 +164,47 @@ const uniforms = {
 };
 */
 
-import Simulation from "./src/simulation";
-import { Physics } from "./src/physics";
-import { Box } from "./src/collider";
-import { clipPointsBehindPlane, get2DcoordsOnPlane, pointOnPlaneProjection, pointOnPlaneProjectionDir } from "./src/gjk";
-import { clip, isInClockwise } from "./src/clipping";
+import Simulation from "./src/physics/simulation";
+import { RigidBody } from "./src/physics/RigidBody";
+import { Box } from "./src/physics/collider";
 
 const sim = new Simulation();
 
-const floor = { physics: new Physics(new Box(100, 6, 100)), sprite: box };
-const cube = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
-const cube2 = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
-cube.physics.translate([0, 2 , 0]);
+const floor = { physics: new RigidBody(new Box(100, 6, 100)), sprite: box };
+const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+const cube2 = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+cube.physics.translate([6, 5 , 0]);
 cube2.physics.translate([0, 10, 0]);
-//cube.physics.rotate([Math.PI/4,Math.PI/4,Math.PI/4])
+cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
 cube.physics.addAcceleration([0, -9.8, 0]);
-
 cube2.physics.addAcceleration([0, -9.8, 0]);
 
 sim.addObject(floor.physics);
 sim.addObject(cube.physics);
-//sim.addObject(cube2.physics);
+sim.addObject(cube2.physics);
 
-floor.physics.setMass(100);
-
-const objects = [floor, cube];
+floor.physics.setMass(100000000);
+cube2.physics.setMass(10);
+const objects = [floor, cube, cube2];
 console.log(Math.acos(-1))
 floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
+floor.static = true
+for(let i = 2; i < 0; i++){
+  const cube = { physics: new Physics(new Box(5, 5, 5)), sprite: box };
+  cube.physics.translate([0, i + 6 * i , 0]);
+  sim.addObject(cube.physics);
+  cube.physics.addAcceleration([0, -9.8, 0]);
+  objects.push(cube)
+}
 
 
 
 
-
-
-/*
-const projections = p.map(point => pointOnPlaneProjection(plane, point))
-
-const _i = vector.normalize(vector.diff(projections[0], plane[0]))
-const _j = vector.normalize(vector.cross(plane[1], _i))
-
-console.log(_i, _j, vector.dot(_i, _j))
-const _2d = projections.map(p => get2DcoordsOnPlane(_i, _j, p))
-console.log(_2d)*/
-
-/*
-const point = [5,0,5]
-const plane = [[0,0,0], [0,0,1]]
-const proj = pointOnPlaneProjectionDir(plane, point, [0,-1,-1])
-*/
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
-let i = 0;
+document.addEventListener('keypress', (e) => {if(e.key === 'p')sim.tick(0.015)})
+let i = 0
 const loop = () => {
   sim.tick(0.015);
 
@@ -235,30 +225,21 @@ const loop = () => {
   const manifolds = sim.collisionManifolds.values();
   
   for (const manifold of manifolds) {
+   
+    
     manifold.contacts.forEach((contact) => {
-      const {contactFace1, contactFace2, plane, features, _3d, projections1, projections2} = contact
+      
       points
         .draw({
-          u_matrix: m4.translation(...contact.plane[0]),
+          u_matrix: m4.translation(...contact.PA),
           u_color: [0.6, 0.6, 0.0, 1],
         }, cameraMatrix)
         .draw({
-          u_matrix: m4.translation(...vector.sum(contact.plane[0], contact.plane[1])),
+          u_matrix: m4.translation(...contact.PB),
           u_color: [0.5, 0.1, 0.2, 1],
         }, cameraMatrix);
         
-       
-        features.forEach(f =>{
-          
-          points.draw({
-            u_matrix: m4.translation(...f.PA),
-            u_color: [0.5, 0.5, 0.5, 1],
-          }, cameraMatrix)
-          .draw({
-            u_matrix: m4.translation(...f.PB),
-            u_color: [0.0, 0.0, 0.0, 1],
-          }, cameraMatrix)
-        })
+
        
         
 
