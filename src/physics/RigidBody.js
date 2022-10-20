@@ -76,6 +76,7 @@ class RigidBody extends EventEmitter {
 
     this.emit("update");
   }
+
   applyImpulse(impulse, point) {
     this.velocity = sum(this.velocity, scale(impulse, this.inverseMass));
     const angularImpulse = m3.transformPoint(

@@ -6,7 +6,7 @@ import {
   warmStart,
   solvePosition,
 } from "./constraints";
-import {gjk} from "./gjk";
+import { gjk } from "./gjk";
 
 import Manifold from "./manifold";
 import Island from "./island";
@@ -48,12 +48,12 @@ export default class Simulation {
     this.bvh.removeLeaf(object.BVlink);
     this.objects = this.objects.filter((el) => el === object);
   }
- 
+
   updateCollisions() {
-    const {collisionManifolds} = this 
-    for(const [hash, manifold] of collisionManifolds){
-      manifold.update()
-      if(!manifold.keep) collisionManifolds.delete(hash)
+    const { collisionManifolds } = this;
+    for (const [hash, manifold] of collisionManifolds) {
+      manifold.update();
+      if (!manifold.keep) collisionManifolds.delete(hash);
     }
     for (let i = 0, n = this.objects.length; i < n; i++) {
       const object = this.objects[i];
@@ -64,12 +64,12 @@ export default class Simulation {
         for (let j = 0, n = cols.length; j < n; j++) {
           const hash = pairHash(object.id, cols[j].id);
           let manifold = this.collisionManifolds.get(hash);
-          if(manifold) continue
+          if (manifold) continue;
           const contacts = gjk(object, cols[j]);
-          
-          if(contacts){
+
+          if (contacts) {
             manifold = new Manifold(...contacts);
-            
+
             this.collisionManifolds.set(hash, manifold);
           }
         }
@@ -80,15 +80,10 @@ export default class Simulation {
   tick(deltaTime) {
     this.updateCollisions();
     let manifolds = this.collisionManifolds.values();
-    
-   
 
-    
-
-   
     const system = new Island();
     for (let manifold of manifolds) {
-      const contacts = manifold.contacts.map(c => new ContactConstraint(c))
+      const contacts = manifold.contacts.map((c) => new ContactConstraint(c));
       for (let i = 0, n = contacts.length; i < n; i++) {
         contacts[i].updateEq();
       }
@@ -104,7 +99,7 @@ export default class Simulation {
     const [_JMJ, _JV, _JpV] = system.getUpdatedValues();
     const lambda = GaussSeidel(_JMJ, _JV, system.constraints.length, 1e-7);
     system.applyResolvingImpulses(lambda);
-    
+
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
@@ -112,10 +107,9 @@ export default class Simulation {
     manifolds = this.collisionManifolds.values();
     const positionSystem = new Island();
     for (const manifold of manifolds) {
-      const contacts = manifold.contacts.map(c => new ContactConstraint(c))
+      const contacts = manifold.contacts.map((c) => new ContactConstraint(c));
       contacts.forEach((contact) => contact.updateEq());
       if (contacts.length > 1) {
-        
         positionSystem.addConstraint(...contacts);
       }
     }
@@ -133,7 +127,6 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integratePseudoVelocities(deltaTime);
     }
-    this.objects.forEach(object => object.updateInverseInertia())
-    
+    this.objects.forEach((object) => object.updateInverseInertia());
   }
 }

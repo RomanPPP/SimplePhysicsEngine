@@ -4,4 +4,5 @@ test.js
 dist/test.js
 src/physics/terrain.js
 src/physics/noise.js
-src/game
+src/game/controllable.js
+src/game/config.js

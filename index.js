@@ -3,10 +3,6 @@ import { m4, vector } from "math";
 const cPos = [0, 0, 5];
 const cRot = [0, 0, 0];
 const controls = {
-  ArrowDown: () => (cRot[0] -= 0.1),
-  ArrowUp: () => (cRot[0] += 0.1),
-  ArrowLeft: () => (cRot[1] += 0.1),
-  ArrowRight: () => (cRot[1] -= 0.1),
   w: () => {
     const delta = m4.transformPoint(
       m4.xRotate(m4.yRotation(cRot[1]), cRot[0]),
@@ -44,32 +40,7 @@ const controls = {
     cPos[2] += delta[2];
   },
 };
-const mouseControls = {
-  lastX: 0,
-  lastY: 0,
-  mousemove: function (e) {
-    const deltaX = e.offsetX - this.lastX;
-    this.lastX = e.offsetX;
-    const deltaY = e.offsetY - this.lastY;
-    this.lastY = e.offsetY;
 
-    cRot[1] -= deltaX * 0.005;
-    cRot[0] -= deltaY * 0.005;
-    cRot[0] = Math.max(-Math.PI/2, Math.min(Math.PI/2, cRot[0]))
-  },
-};
-document.onkeydown = (e) => {
-  if (!controls[e.key]) return;
-  controls[e.key]();
-};
-document.onmousedown = (e) => {
-  mouseControls.lastY = e.offsetY;
-  mouseControls.lastX = e.offsetX;
-  document.onmousemove = mouseControls.mousemove.bind(mouseControls);
-  document.onmouseup = () => {
-    document.onmousemove = null;
-  };
-};
 let cameraMatrix = m4.translation(...cPos);
 cameraMatrix = m4.yRotate(cameraMatrix, cRot[1]);
 cameraMatrix = m4.xRotate(cameraMatrix, cRot[0]);
@@ -96,6 +67,17 @@ import {
   defaultProgram,
 } from "graphics";
 
+import MouseInput from "./src/game/mouse";
+import Keylogger from "./src/game/keylogger";
+const mouseInput = new MouseInput()
+mouseInput.on('move', ([deltaX, deltaY]) => {
+  cRot[1] -= deltaX * 0.005;
+  cRot[0] -= deltaY * 0.005;
+  cRot[0] = Math.max(-Math.PI/2, Math.min(Math.PI/2, cRot[0]))
+})
+mouseInput.listen() 
+const keyInput = new Keylogger()
+keyInput.listen()
 const context = new GLcontextWrapper("canvas");
 const gl = context.getContext();
 context.resizeCanvasToDisplaySize();
@@ -168,14 +150,15 @@ import Simulation from "./src/physics/simulation";
 import { RigidBody } from "./src/physics/RigidBody";
 import { Box } from "./src/physics/collider";
 
+
 const sim = new Simulation();
 
 const floor = { physics: new RigidBody(new Box(100, 6, 100)), sprite: box };
 const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
 const cube2 = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-cube.physics.translate([6, 5 , 0]);
+cube.physics.translate([0, 5 , 0]);
 cube2.physics.translate([0, 10, 0]);
-cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
+//cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
 cube.physics.addAcceleration([0, -9.8, 0]);
 cube2.physics.addAcceleration([0, -9.8, 0]);
 
@@ -184,7 +167,7 @@ sim.addObject(cube.physics);
 sim.addObject(cube2.physics);
 
 floor.physics.setMass(100000000);
-cube2.physics.setMass(10);
+cube2.physics.setMass(1);
 const objects = [floor, cube, cube2];
 console.log(Math.acos(-1))
 floor.physics.translate([0, -3, 0]);
@@ -203,7 +186,7 @@ for(let i = 2; i < 0; i++){
 
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
-document.addEventListener('keypress', (e) => {if(e.key === 'p')sim.tick(0.015)})
+document.addEventListener('keypress', (e) => {if(e.key === 'p')mouseInput.unsubscribe()})
 let i = 0
 const loop = () => {
   sim.tick(0.015);
@@ -215,7 +198,9 @@ const loop = () => {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
-
+  for(const key of keyInput.keys){
+    if(controls[key]) controls[key]()
+  }
   cameraMatrix = m4.translation(...cPos);
   cameraMatrix = m4.yRotate(cameraMatrix, cRot[1]);
   cameraMatrix = m4.xRotate(cameraMatrix, cRot[0]);
