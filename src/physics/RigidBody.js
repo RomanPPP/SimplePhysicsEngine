@@ -80,7 +80,7 @@ class RigidBody extends EventEmitter {
   applyImpulse(impulse, point) {
     this.velocity = sum(this.velocity, scale(impulse, this.inverseMass));
     const angularImpulse = m3.transformPoint(
-      this.getItensor(),
+      this.inverseInertia,
       cross(point, impulse)
     );
     this.angularV = sum(this.angularV, angularImpulse);
@@ -91,7 +91,7 @@ class RigidBody extends EventEmitter {
       scale(impulse, this.inverseMass)
     );
     const angularImpulse = m3.transformPoint(
-      this.getItensor(),
+      this.inverseInertia,
       cross(point, impulse)
     );
     this.pseudoAngularV = sum(this.pseudoAngularV, angularImpulse);
@@ -132,7 +132,7 @@ class RigidBody extends EventEmitter {
 class Player extends RigidBody {
   constructor() {
     super(...arguments);
-    this.friction = 10;
+    this.friction = 0.0;
   }
   applyImpulse(impulse, point) {
     this.velocity = sum(this.velocity, scale(impulse, this.inverseMass));

@@ -112,7 +112,7 @@ class ContactConstraint extends Constraint {
     fConstraint1.updateEq();
     fConstraint2.updateEq();
 
-    let mu = (body1.friction + body1.friction) * 10;
+    let mu = (body1.friction + body1.friction) * 2;
 
     let fImpulse1 =
       (fConstraint1.relativeVelocityNormalProjection - 0.01) /
