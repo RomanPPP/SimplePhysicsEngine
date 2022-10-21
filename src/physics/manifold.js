@@ -3,7 +3,7 @@ import { m3, vector } from "math";
 const { distanceFromLine, norm, findFurthestPoint, sum, diff, normSq, dot } =
   vector;
 
-const prec = 0.005;
+const prec = 0.0005;
 
 export default class Manifold {
   constructor(...contacts) {

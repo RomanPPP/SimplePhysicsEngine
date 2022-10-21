@@ -70,14 +70,14 @@ class Box {
     this.RS = m3.identity();
     this.pos = [0, 0, 0];
     this.points = [
-      [-a/2, -b/2, -c/2],
-      [a/2, -b/2, -c/2],
-      [a/2, -b/2, c/2],
-      [-a/2, -b/2, c/2],
-      [-a/2, b/2, -c/2],
-      [a/2, b/2, -c/2],
-      [a/2, b/2, c/2],
-      [-a/2, b/2, c/2],
+      [-1/2, -1/2, -1/2],
+      [1/2, -1/2, -1/2],
+      [1/2, -1/2, 1/2],
+      [-1/2, -1/2, 1/2],
+      [-1/2, 1/2, -1/2],
+      [1/2, 1/2, -1/2],
+      [1/2, 1/2, 1/2],
+      [-1/2, 1/2, 1/2],
     ];
     this.indices = [
       [0, 4, 5, 1], // -z
@@ -123,6 +123,12 @@ class Box {
     this.Rmatrix = matrix;
     this.RmatrixInverse = m3.transpose(matrix);
   }
+  setTRMatrix(m){
+    const rm = m4.m4Tom3(m)
+    this.setRmatrix(m)
+    const pos = [m[12], m[13], m[14]]
+    this.translate(pos)
+  }
   support(dir) {
     const _dir = m3.transformPoint(this.RmatrixInverse, dir);
 
@@ -132,9 +138,9 @@ class Box {
     res[1] = _dir[1] > 0 ? this.max[1] : this.min[1];
     res[2] = _dir[2] > 0 ? this.max[2] : this.min[2];
 
-    const sup = m4.transformPoint(this.getM4(), res);
+    const sup = m3.transformPoint(this.Rmatrix, res);
 
-    return sup;
+    return sum(sup, this.pos);
   }
   getInverseInertiaTensor(mass) {
     const i1 =
@@ -154,8 +160,10 @@ class Box {
     m[13] = this.pos[1];
     m[14] = this.pos[2];
     m[15] = 1;
-    return m;
+    const scale = diff(this.max, this.min)
+    return m4.scale(m, ...scale)
   }
+  
   localToGlobal(v) {
     let global = m3.transformPoint(this.Rmatrix, v);
     return sum(this.pos, global);

@@ -97,7 +97,7 @@ export default class Simulation {
     }
 
     const [_JMJ, _JV, _JpV] = system.getUpdatedValues();
-    const lambda = GaussSeidel(_JMJ, _JV, system.constraints.length, 1e-7);
+    const lambda = GaussSeidel(_JMJ, _JV, system.constraints.length, 1e-3);
     system.applyResolvingImpulses(lambda);
 
     for (let i = 0, n = this.objects.length; i < n; i++) {
@@ -120,7 +120,7 @@ export default class Simulation {
       JMJ,
       JpV,
       positionSystem.constraints.length,
-      1e-7
+      1e-3
     );
     positionSystem.applyResolvingPseudoImpulses(pLambda, deltaTime);
 

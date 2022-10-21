@@ -121,6 +121,7 @@ sim.addObject(cube.physics);
 sim.addObject(cube2.physics);
 
 floor.physics.setMass(100000000);
+cube.physics.setMass(5);
 cube2.physics.setMass(1);
 const objects = [floor, cube, cube2];
 console.log(Math.acos(-1))
@@ -186,7 +187,7 @@ const loop = () => {
       obj.physics.collider.max,
       obj.physics.collider.min
     );
-    const u_matrix = m4.scale(obj.physics.collider.getM4(), ...scale);
+    const u_matrix = obj.physics.collider.getM4()
     obj.sprite.draw({ u_color: [1, 0, 1, 1], u_matrix }, cameraMatrix);
   });
   
