@@ -106,25 +106,34 @@ import Controllable from "./src/game/controllable";
 
 const sim = new Simulation();
 
-const floor = { physics: new RigidBody(new Box(100, 6, 100)), sprite: box };
-const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
+
 const cube2 = { physics: new Player(new Box(5, 5, 5)), sprite: box };
 
-cube.physics.translate([0, 5 , 0]);
-cube2.physics.translate([0, 10, 0]);
+
+cube2.physics.translate([0, 10, -6]);
 //cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
-cube.physics.addAcceleration([0, -9.8, 0]);
+
 cube2.physics.addAcceleration([0, -9.8, 0]);
 
 sim.addObject(floor.physics);
-sim.addObject(cube.physics);
+
 sim.addObject(cube2.physics);
+const objects = [floor,  cube2];
+
+for(let i = 0; i < 4; i++){
+  const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+  cube.physics.translate([0, 5 * i + 2 , 0]);
+  cube.physics.setMass(10);
+  cube.physics.addAcceleration([0, -9.8, 0]);
+  sim.addObject(cube.physics);
+  objects.push(cube)
+}
 
 floor.physics.setMass(100000000);
-cube.physics.setMass(5);
-cube2.physics.setMass(1);
-const objects = [floor, cube, cube2];
-console.log(Math.acos(-1))
+
+cube2.physics.setMass(5);
+
 floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
 floor.static = true
@@ -133,6 +142,8 @@ const player = new Controllable(cube2.physics)
 
 player.listenKeyboard(keyInput)
 player.listenMouse(mouseInput)
+
+
 
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");

@@ -1,5 +1,5 @@
 import { EventEmitter } from "./eventEmitter";
-import { m3, vector, AABB } from "math";
+import { m3, vector } from "math";
 const { cross, scale, norm, sum, diff, chkV } = vector;
 const prec = 0.0001;
 const stopTreshold = 0.011;
