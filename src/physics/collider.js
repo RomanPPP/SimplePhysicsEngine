@@ -68,6 +68,7 @@ class Box {
     this.Rmatrix = m3.identity();
     this.RmatrixInverse = m3.identity();
     this.RS = m3.identity();
+    this.TRS = m4.identity()
     this.pos = [0, 0, 0];
     this.points = [
       [-1/2, -1/2, -1/2],
@@ -96,6 +97,16 @@ class Box {
       [1, 0, 0],
     ];
   }
+  setScale(scale){
+    const [a, b, c] = scale
+    this.min = [-a / 2, -b / 2, -c / 2];
+    this.max = [a / 2, b / 2, c / 2];
+  }
+  setTranslation(translation){
+    
+    this.pos =[...translation]
+    console.log(this.pos)
+  }
   getNormalsGlobal() {
     return this.normals.map((n) => m3.transformPoint(this.Rmatrix, n));
   }
@@ -120,7 +131,9 @@ class Box {
     this.RmatrixInverse = m3.transpose(this.Rmatrix);
   }
   setRmatrix(matrix) {
-    this.Rmatrix = matrix;
+    console.log(this.Rmatrix)
+    this.Rmatrix = [...matrix];
+    console.log(this.Rmatrix)
     this.RmatrixInverse = m3.transpose(matrix);
   }
   setTRMatrix(m){
@@ -128,6 +141,13 @@ class Box {
     this.setRmatrix(m)
     const pos = [m[12], m[13], m[14]]
     this.translate(pos)
+  }
+  setTRS(m){
+    const {translation, Rmatrix, scale } = m4.decompose(m)
+    this.setTranslation(translation)
+    this.setRmatrix(m4.m4Tom3(Rmatrix))
+    this.setScale(scale)
+    console.log(translation, Rmatrix, scale )
   }
   support(dir) {
     const _dir = m3.transformPoint(this.RmatrixInverse, dir);

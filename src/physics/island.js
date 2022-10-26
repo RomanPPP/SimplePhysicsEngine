@@ -59,20 +59,20 @@ export default class Island {
         this.JMJ[k + j] = () => f1() + f2() + f3() + f4();
         this.JMJp[k + j] = () => fp1() + fp2() + fp3() + fp4();
       }
-      let b = Math.max(0, constraint.penDepth - 0.01) / deltaTime;
 
-      const rv = constraint.relativeVelocityNormalProjection
       /*  vec.dot(J[0], body1.velocity) +
         vec.dot(J[1], body1.angularV) +
         vec.dot(J[2], body2.velocity) +
         vec.dot(J[3], body2.angularV);*/
-      this.JV[i] = () => -rv //+ b* 0.125;
+      this.JV[i] = () => -constraint.relativeVelocityNormalProjection; //+ b* 0.125;
 
       /*this.JpV[i] = () => -vec.dot(J[0], body1.pseudoVelocity) -
                             vec.dot(J[1], body1.pseudoAngularV) -
                             vec.dot(J[2], body2.pseudoVelocity) -
                            vec.dot(J[3], body2.pseudoAngularV) - constraint.bias/deltaTime */
-      this.JpV[i] = () => -rv + b 
+      this.JpV[i] = (deltaTime) =>
+        -constraint.relativeVelocityNormalProjection +
+        (Math.max(0, constraint.penDepth - 0.1) / deltaTime) * 0.125;
     }
   }
   getJMJ() {
@@ -81,17 +81,17 @@ export default class Island {
   getJv() {
     return this.JV.map((f) => f());
   }
-  getJpV() {
-    return this.JpV.map((f) => f());
+  getJpV(deltaTime) {
+    return this.JpV.map((f) => f(deltaTime));
   }
   getJMJp() {
     return this.JMJp.map((f) => f());
   }
-  getUpdatedValues() {
+  getUpdatedValues(deltaTime) {
     return [
       this.JMJ.map((f) => f()),
       this.JV.map((f) => f()),
-      this.JpV.map((f) => f()),
+      this.JpV.map((f) => f(deltaTime)),
     ];
   }
   applyResolvingImpulses(lambda) {

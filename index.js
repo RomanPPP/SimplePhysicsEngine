@@ -101,44 +101,49 @@ const uniforms = {
 import Simulation from "./src/physics/simulation";
 import { Player, RigidBody } from "./src/physics/RigidBody";
 import { Box } from "./src/physics/collider";
-import Controllable from "./src/game/controllable";
+import {Controllable, Noclip} from "./src/game/controllable";
 
+import { Joint } from "./src/physics/contact";
 
 const sim = new Simulation();
 
 const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
-const cube2 = { physics: new Player(new Box(5, 5, 5)), sprite: box };
-
-
-cube2.physics.translate([0, 10, -6]);
+const cube2 = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+const cube3 = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+const cube4 = { physics: new Player(new Box(5, 5, 5)), sprite: box };
+cube2.physics.translate([0, 10, -10]);
 //cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
 
-cube2.physics.addAcceleration([0, -9.8, 0]);
-
+cube2.physics.addAcceleration([0, 3, 0]);
+cube3.physics.addAcceleration([0, -9.8, 0]);
+cube4.physics.addAcceleration([0, -9.8, 0]);
 sim.addObject(floor.physics);
 
 sim.addObject(cube2.physics);
-const objects = [floor,  cube2];
+sim.addObject(cube3.physics);
+sim.addObject(cube4.physics);
+const objects = [floor,  cube2, cube3, cube4];
+sim.addConstraints([new Joint({localRa : [0,-3,0], localRb : [0,3,0], body1 : cube2.physics, body2 :cube3.physics})], 'name')
 
-for(let i = 0; i < 4; i++){
+for(let i = 0; i < 0; i++){
   const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-  cube.physics.translate([0, 5 * i + 2 , 0]);
+  cube.physics.translate([0, 5 * i + 2 , 0])
   cube.physics.setMass(10);
-  cube.physics.addAcceleration([0, -9.8, 0]);
+  cube.physics.addAcceleration([0, -9.8, 0])
   sim.addObject(cube.physics);
   objects.push(cube)
 }
 
 floor.physics.setMass(100000000);
 
-cube2.physics.setMass(5);
+cube2.physics.setMass(2);
 
 floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
 floor.static = true
 
-const player = new Controllable(cube2.physics)
+const player = new Controllable(cube4.physics)
 
 player.listenKeyboard(keyInput)
 player.listenMouse(mouseInput)
@@ -227,29 +232,7 @@ const loop = () => {
     },
     cameraMatrix
   )
-  /*.draw(
-    {
-      u_matrix: m4.translation(...proj),
-      u_color: [0, 0.0, 0.0, 1],
-      u_worldViewPosition: cameraMatrix,
-    },
-    cameraMatrix
-  ).draw(
-    {
-      u_matrix: m4.translation(...point),
-      u_color: [0,1.0, 0.1, 1],
-      u_worldViewPosition: cameraMatrix,
-    },
-    cameraMatrix
-  );*/
-  /*line.draw(
-    {
-      u_matrix: m4.rotation(...vector.diff([0,-1,0], [1,0,0])),
-      u_color: [1, 0, 1, 1],
-      u_worldViewPosition: cameraMatrix,
-    },
-    cameraMatrix
-  );*/
+ 
     
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   requestAnimationFrame(loop)

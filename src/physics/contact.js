@@ -136,7 +136,7 @@ class ContactConstraint extends Constraint {
   applyResolvingPseudoImpulse(lambda) {
     if (lambda < 0) return;
     const max = this.effMass * 10;
-    lambda = Math.min(10, lambda);
+    lambda = Math.max(Math.min(100, lambda)- 0.1,0)
     this.body1.applyPseudoImpulse(scale(this.J[0], lambda), this.ra);
     this.body2.applyPseudoImpulse(scale(this.J[2], lambda), this.rb);
   }
@@ -144,25 +144,26 @@ class ContactConstraint extends Constraint {
 
 
 class Joint extends Constraint {
-  constructor(localRa, localRb, body1, body2) {
-    super(body1, body2);
+  constructor({localRa, localRb, body1, body2}) {
+    super({body1, body2});
     this.localRa = localRa;
     this.localRb = localRb;
     this.PA = this.body1.collider.localToGlobal(this.localRa);
     this.PB = this.body2.collider.localToGlobal(this.localRb);
   }
   updateEq() {
+
     this.PA = this.body1.collider.localToGlobal(this.localRa);
     this.PB = this.body2.collider.localToGlobal(this.localRb);
     this.n = diff(this.PA, this.PB);
     this.ra = diff(this.PA, this.body1.collider.pos);
     this.rb = diff(this.PB, this.body2.collider.pos);
-    this.dist = norm(this.n);
+    this.penDepth = norm(this.n);
     this.J = [
-      scale(this.n, 1 / this.dist),
-      scale(cross(this.n, this.ra), 1 / this.dist),
-      scale(this.n, -1 / this.dist),
-      scale(cross(this.rb, this.n), 1 / this.dist),
+      scale(this.n, -1 ),
+      cross(this.n, this.ra),
+      scale(this.n, 1),
+     cross(this.rb, this.n),
     ];
     const I1 = this.body1.inverseInertia;
     const I2 = this.body2.inverseInertia;
@@ -173,6 +174,27 @@ class Joint extends Constraint {
       dot(m3.transformPoint(I1, this.J[1]), this.J[1]) +
       M2 +
       dot(m3.transformPoint(I2, this.J[3]), this.J[3]);
+    this.relativeVelocity = diff(
+        sum(this.body2.velocity, cross(this.body2.angularV, this.rb)),
+        sum(this.body1.velocity, cross(this.body1.angularV, this.ra))
+      );
+    this.relativeVelocityNormalProjection = dot(this.relativeVelocity, this.n);
+  }
+  applyResolvingImpulse(lambda) {
+  
+    if (lambda < 0) return;
+    const max = this.effMass * 10;
+    lambda = Math.min(10, lambda);
+    this.body1.applyImpulse(scale(this.J[0], lambda), this.ra);
+    this.body2.applyImpulse(scale(this.J[2], lambda), this.rb);
+    
+  }
+  applyResolvingPseudoImpulse(lambda) {
+    if (lambda < 0) return;
+    const max = this.effMass * 10;
+    lambda = Math.max(Math.min(100, lambda)- 0.1,0)
+    this.body1.applyPseudoImpulse(scale(this.J[0], lambda), this.ra);
+    this.body2.applyPseudoImpulse(scale(this.J[2], lambda), this.rb);
   }
 }
 export { ContactConstraint, Constraint, Joint };
