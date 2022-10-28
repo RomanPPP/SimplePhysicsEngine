@@ -51,18 +51,18 @@ const computeIntersection = (p1, p2, p3, p4) => {
   return [x, y];
 };
 
-const clip = (A, B, dir1 = 1, dir2 = 1) => {
+const clip = (A, B) => {
   let result = [...A];
 
   for (let i = 0, n = B.length; i < n; i ++) {
     const next = [...result];
     result = [];
-    const aEdge1 = B.at((i - 1) * dir1);
-    const aEdge2 = B.at(i * dir1);
+    const aEdge1 = B.at((i - 1) );
+    const aEdge2 = B.at(i );
 
     for (let j = 0, _n = next.length; j < _n; j++) {
-      const bEdge1 = next.at((j - 1) * dir2);
-      const bEdge2 = next.at(j * dir2);
+      const bEdge1 = next.at((j - 1));
+      const bEdge2 = next.at(j );
 
       if (isInside(aEdge1, aEdge2, bEdge2)) {
         if (!isInside(aEdge1, aEdge2, bEdge1)) {

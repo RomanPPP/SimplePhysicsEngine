@@ -432,8 +432,8 @@ const getContactManifold = (body1, body2) => {
     const dir2 = isInClockwise(_2d2[0], _2d2[1], _2d2[2]);
     if (dir1 < 0) _2d1 = _2d1.map((_, i) => _2d1.at(-i));
     if (dir2 < 0) _2d2 = _2d2.map((_, i) => _2d2.at(-i));
-    const clipped = clip(_2d1, _2d2, dir1, dir2);
-
+    const clipped = clip(_2d1, _2d2);
+   
     const _3d = clipped.map((p) =>
       sum(origin, sum(scale(i, p[0]), scale(j, p[1])))
     );

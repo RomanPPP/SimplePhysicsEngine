@@ -104,32 +104,42 @@ import { Box } from "./src/physics/collider";
 import {Controllable, Noclip} from "./src/game/controllable";
 
 import { Joint } from "./src/physics/contact";
+import createRagdoll from "./src/physics/createRagdoll";
+
+
+
+
 
 const sim = new Simulation();
 
 const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
-const cube2 = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-const cube3 = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-const cube4 = { physics: new Player(new Box(5, 5, 5)), sprite: box };
-cube2.physics.translate([0, 10, -10]);
+const cube2 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
+const cube3 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
+const cube4 = { physics: new Player(new Box(2, 2, 2)), sprite: box };
+cube2.physics.translate([0, 5, 0]);
+cube4.physics.translate([0, 10, -5]);
+cube3.physics.translate([0, 3, 0]);
 //cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
 
 cube2.physics.addAcceleration([0, 3, 0]);
 cube3.physics.addAcceleration([0, -9.8, 0]);
 cube4.physics.addAcceleration([0, -9.8, 0]);
+
+cube2.physics.setMass(20)
+cube3.physics.setMass(20)
 sim.addObject(floor.physics);
 
 sim.addObject(cube2.physics);
 sim.addObject(cube3.physics);
 sim.addObject(cube4.physics);
 const objects = [floor,  cube2, cube3, cube4];
-sim.addConstraints([new Joint({localRa : [0,-3,0], localRb : [0,3,0], body1 : cube2.physics, body2 :cube3.physics})], 'name')
+
 
 for(let i = 0; i < 0; i++){
   const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-  cube.physics.translate([0, 5 * i + 2 , 0])
-  cube.physics.setMass(10);
+  cube.physics.translate([0, 5 * i +15 , 0])
+  cube.physics.setMass(2);
   cube.physics.addAcceleration([0, -9.8, 0])
   sim.addObject(cube.physics);
   objects.push(cube)
@@ -137,22 +147,32 @@ for(let i = 0; i < 0; i++){
 
 floor.physics.setMass(100000000);
 
-cube2.physics.setMass(2);
+
 
 floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
 floor.static = true
 
-const player = new Controllable(cube4.physics)
+const player = new Noclip(cube4.physics)
 
 player.listenKeyboard(keyInput)
 player.listenMouse(mouseInput)
 
 
 
+const [bodies, constraints] = createRagdoll([0,25,0])
+bodies.forEach(b=>{
+  b.addAcceleration([0,-9.8,0])
+ 
+  sim.addObject(b)
+}) 
+sim.addConstraints(constraints, 'ragdoll')
+//sim.addConstraints([new Joint([0,20,0], [0,0,0],floor.physics,bodies[0],0.1, 0.0)], 'name')
+objects.push(...bodies.map(b=> ({physics : b, sprite : box})))
+
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
-document.addEventListener('keypress', (e) => {if(e.key === 'p')mouseInput.unsubscribe()})
+document.addEventListener('keypress', (e) => {if(e.key === 'p')sim.tick(0.015)})
 let i = 0
 const loop = () => {
   sim.tick(0.015);
