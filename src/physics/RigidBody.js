@@ -2,7 +2,7 @@ import { EventEmitter } from "./eventEmitter";
 import { m3, vector } from "math";
 const { cross, scale, norm, sum, diff, chkV } = vector;
 const prec = 0.0001;
-const stopTreshold = 0.0000001;
+const stopTreshold = 0.005;
 class RigidBody extends EventEmitter {
   constructor(collider) {
     super();
@@ -19,6 +19,8 @@ class RigidBody extends EventEmitter {
     this.id = 1;
     this.friction = 0.5;
     this.BVlink;
+    this.oldVelocity = null
+    this.group = null
   }
   integrate(dt) {
     const { acceleration, velocity, translation } = this;
@@ -28,6 +30,19 @@ class RigidBody extends EventEmitter {
     if (norm(rotation) > stopTreshold) this.rotate(rotation);
     let deltaSpeed = scale(this.acceleration, dt);
     this.velocity = sum(this.velocity, deltaSpeed);
+  }
+  integrateRK4(dt){
+    const {acceleration, velocity, angularV} = this
+    
+
+    const _translation = scale(sum(velocity, scale(acceleration, 2/3 * dt)), dt)
+    const _rotation = scale(angularV, dt)
+    const deltaVelocity  = scale(acceleration, dt)
+
+    if (norm(_translation) > stopTreshold) this.translate(_translation);
+    
+    if (norm(_rotation) > stopTreshold) this.rotate(_rotation);
+    this.velocity = sum(velocity, deltaVelocity)
   }
   integratePseudoVelocities(dt) {
     const translation = scale(this.pseudoVelocity, dt);
@@ -47,13 +62,14 @@ class RigidBody extends EventEmitter {
     this.pseudoAngularV = sum(this.pseudoAngularV, v);
   }
   integrateVelocities(dt) {
-    const translation = scale(this.velocity, dt);
+    const translation = scale(this.velocity , dt);
     if (norm(translation) > stopTreshold) this.translate(translation);
     const rotation = scale(this.angularV, dt );
     if (norm(translation) > stopTreshold) this.rotate(rotation);
   }
   integrateForces(dt) {
     let deltaSpeed = scale(this.acceleration, dt);
+    this.intVelocity = sum(this.velocity,scale(this.acceleration, 3/3 *dt))
     this.velocity = sum(this.velocity, deltaSpeed);
   }
   updateInverseInertia() {

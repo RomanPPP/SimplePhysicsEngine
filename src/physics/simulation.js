@@ -13,6 +13,11 @@ import Island from "./island";
 import { GaussSeidel } from "./GSsolver";
 import { ContactConstraint } from "./contact";
 
+const sameGroup = (body1, body2) => {
+  if (!body1.group) return;
+  if (!body2.group) return;
+  return body1.group === body2.group;
+};
 const pairHash = (x, y) =>
   x === Math.max(x, y) ? x * x + x + y : y * y + x + y;
 
@@ -39,10 +44,9 @@ export default class Simulation {
   addConstraints(constraints, name) {
     const system = new Island(...constraints);
     system.generateSystem();
-    const positionSystem = new Island(...constraints)
-    positionSystem.generateSystem()
-    this.constraints.set(name, [system, positionSystem])
-  
+    const positionSystem = new Island(...constraints);
+    positionSystem.generateSystem();
+    this.constraints.set(name, [system, positionSystem]);
   }
   updateObjectAABB(object) {
     const newAABB = object.getAABB();
@@ -69,6 +73,7 @@ export default class Simulation {
       object.BVlink.isChecked = true;
       if (cols.length != 0)
         for (let j = 0, n = cols.length; j < n; j++) {
+          if (sameGroup(object, cols[j])) continue;
           const hash = pairHash(object.id, cols[j].id);
           let manifold = this.collisionManifolds.get(hash);
           if (manifold) continue;
@@ -86,22 +91,19 @@ export default class Simulation {
   }
   tick(deltaTime) {
     this.updateCollisions();
-    let manifolds = this.collisionManifolds
+    let manifolds = this.collisionManifolds;
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateForces(deltaTime);
     }
     const system = new Island();
     for (let [key, manifold] of manifolds) {
-      const useVelocityBias = manifold.contacts.length < 3
+      const useVelocityBias = manifold.contacts.length < 3;
       const contacts = manifold.contacts.map((c) => {
-        const constraint =  new ContactConstraint(c)
-        if(useVelocityBias){
-          constraint.biasFactor = 0.09
-        }
-        else{
-          constraint.pseudoBiasFactor = 0.1
-        }
-        return constraint
+        const constraint = new ContactConstraint(c);
+        if (useVelocityBias) {
+          constraint.biasFactor = 0.09;
+        } 
+        return constraint;
       });
 
       for (let i = 0, n = contacts.length; i < n; i++) {
@@ -112,30 +114,31 @@ export default class Simulation {
 
     system.generateSystem(deltaTime);
 
-    
-    
-    const lambda = GaussSeidel(system.getJMJ(), system.getJV(deltaTime), system.constraints.length, 1e-6);
+    const lambda = GaussSeidel(
+      system.getJMJ(),
+      system.getJV(deltaTime),
+      system.constraints.length,
+      1e-6
+    );
     system.applyResolvingImpulses(lambda);
 
+    for (const [name, constraints] of this.constraints) {
+      const system = constraints[0];
+      system.constraints.forEach((c) => c.updateEq());
 
-    for(const [name, constraints] of this.constraints){
-      const system = constraints[0]
-      system.constraints.forEach(c => c.updateEq())
-    
-      const JMJ = system.getJMJ()
-      const JV = system.getJV(deltaTime)
-      
+      const JMJ = system.getJMJ();
+      const JV = system.getJV(deltaTime);
+
       const lambda = GaussSeidel(JMJ, JV, system.constraints.length, 1e-6);
-    
+
       system.applyResolvingImpulses(lambda);
     }
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
-    this.objects.forEach((object) => object.updateInverseInertia());
-    
+
     const positionSystem = new Island();
-    for (const [key,manifold] of manifolds) {
+    for (const [key, manifold] of manifolds) {
       const contacts = manifold.contacts.map((c) => new ContactConstraint(c));
       contacts.forEach((contact) => contact.updateEq());
       if (contacts.length > 2) {
@@ -153,20 +156,16 @@ export default class Simulation {
     );
     positionSystem.applyResolvingPseudoImpulses(pLambda, deltaTime);
 
-    for(const [name, constraints] of this.constraints){
-      const system = constraints[1]
-      
-      system.constraints.forEach(c => c.updateEq())
+    for (const [name, constraints] of this.constraints) {
+      const system = constraints[1];
 
-      const JMJ = system.getJMJp()
-      const JpV = system.getJpV(deltaTime)
+      system.constraints.forEach((c) => c.updateEq());
 
-      
-      
-        const lambda = GaussSeidel(JMJ, JpV, system.constraints.length, 1e-6);
-        system.applyResolvingPseudoImpulses(lambda)
-      
-      
+      const JMJ = system.getJMJp();
+      const JpV = system.getJpV(deltaTime);
+
+      const lambda = GaussSeidel(JMJ, JpV, system.constraints.length, 1e-6);
+      system.applyResolvingPseudoImpulses(lambda);
     }
 
     for (let i = 0, n = this.objects.length; i < n; i++) {

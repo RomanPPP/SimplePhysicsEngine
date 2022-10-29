@@ -151,9 +151,9 @@ floor.physics.setMass(100000000);
 
 floor.physics.translate([0, -3, 0]);
 //floor.physics.rotate([0.0,0,0])
-floor.static = true
+//floor.static = true
 
-const player = new Noclip(cube4.physics)
+const player = new Controllable(cube4.physics)
 
 player.listenKeyboard(keyInput)
 player.listenMouse(mouseInput)
@@ -166,7 +166,7 @@ bodies.forEach(b=>{
  
   sim.addObject(b)
 }) 
-sim.addConstraints(constraints, 'ragdoll')
+//sim.addConstraints(constraints, 'ragdoll')
 //sim.addConstraints([new Joint([0,20,0], [0,0,0],floor.physics,bodies[0],0.1, 0.0)], 'name')
 objects.push(...bodies.map(b=> ({physics : b, sprite : box})))
 
