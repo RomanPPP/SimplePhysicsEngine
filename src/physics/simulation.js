@@ -28,7 +28,7 @@ export default class Simulation {
     this.collisions = [];
     this.constraints = new Map();
     this.collisionManifolds = new Map();
-    this.lastId = 0;
+    this.lastId = 1;
   }
   addObject(object) {
     const aabb = object.getExpandedAABB();
@@ -100,8 +100,8 @@ export default class Simulation {
       const useVelocityBias = manifold.contacts.length < 3;
       const contacts = manifold.contacts.map((c) => {
         const constraint = new ContactConstraint(c);
-        if (useVelocityBias) {
-          constraint.biasFactor = 0.09;
+        if (1) {
+          constraint.biasFactor = 0.12;
         } 
         return constraint;
       });
@@ -113,15 +113,17 @@ export default class Simulation {
     }
 
     system.generateSystem(deltaTime);
-
+    /*
     const lambda = GaussSeidel(
       system.getJMJ(),
       system.getJV(deltaTime),
       system.constraints.length,
-      1e-6
+      1e-12
     );
     system.applyResolvingImpulses(lambda);
-
+    */
+   system.solvePGS(deltaTime)
+/*
     for (const [name, constraints] of this.constraints) {
       const system = constraints[0];
       system.constraints.forEach((c) => c.updateEq());
@@ -129,18 +131,21 @@ export default class Simulation {
       const JMJ = system.getJMJ();
       const JV = system.getJV(deltaTime);
 
-      const lambda = GaussSeidel(JMJ, JV, system.constraints.length, 1e-6);
+      const lambda = GaussSeidel(JMJ, JV, system.constraints.length, 1e-12);
 
       system.applyResolvingImpulses(lambda);
-    }
+    }*/
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
-
+/*
     const positionSystem = new Island();
     for (const [key, manifold] of manifolds) {
       const contacts = manifold.contacts.map((c) => new ContactConstraint(c));
-      contacts.forEach((contact) => contact.updateEq());
+
+      contacts.forEach((contact) => {contact.updateEq()
+       
+      });
       if (contacts.length > 2) {
         positionSystem.addConstraint(...contacts);
       }
@@ -152,7 +157,7 @@ export default class Simulation {
       JMJ,
       JpV,
       positionSystem.constraints.length,
-      1e-6
+      1e-12
     );
     positionSystem.applyResolvingPseudoImpulses(pLambda, deltaTime);
 
@@ -164,13 +169,13 @@ export default class Simulation {
       const JMJ = system.getJMJp();
       const JpV = system.getJpV(deltaTime);
 
-      const lambda = GaussSeidel(JMJ, JpV, system.constraints.length, 1e-6);
+      const lambda = GaussSeidel(JMJ, JpV, system.constraints.length, 1e-12);
       system.applyResolvingPseudoImpulses(lambda);
     }
 
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integratePseudoVelocities(deltaTime);
-    }
+    }*/
     this.objects.forEach((object) => object.updateInverseInertia());
   }
 }

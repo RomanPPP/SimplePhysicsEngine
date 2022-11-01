@@ -117,12 +117,12 @@ const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 const cube2 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 const cube3 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 const cube4 = { physics: new Player(new Box(2, 2, 2)), sprite: box };
-cube2.physics.translate([0, 5, 0]);
+cube2.physics.translate([0, 4.7, 0]);
 cube4.physics.translate([0, 10, -5]);
 cube3.physics.translate([0, 3, 0]);
 //cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
 
-cube2.physics.addAcceleration([0, 3, 0]);
+cube2.physics.addAcceleration([0, -9.8, 0]);
 cube3.physics.addAcceleration([0, -9.8, 0]);
 cube4.physics.addAcceleration([0, -9.8, 0]);
 
@@ -137,9 +137,9 @@ const objects = [floor,  cube2, cube3, cube4];
 
 
 for(let i = 0; i < 0; i++){
-  const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-  cube.physics.translate([0, 5 * i +15 , 0])
-  cube.physics.setMass(2);
+  const cube = { physics: new RigidBody(new Box(10, 5, 15)), sprite: box };
+  cube.physics.translate([10, 5 * i +15 , 0])
+  cube.physics.setMass(20);
   cube.physics.addAcceleration([0, -9.8, 0])
   sim.addObject(cube.physics);
   objects.push(cube)
@@ -159,7 +159,7 @@ player.listenKeyboard(keyInput)
 player.listenMouse(mouseInput)
 
 
-
+/*
 const [bodies, constraints] = createRagdoll([0,25,0])
 bodies.forEach(b=>{
   b.addAcceleration([0,-9.8,0])
@@ -169,7 +169,7 @@ bodies.forEach(b=>{
 //sim.addConstraints(constraints, 'ragdoll')
 //sim.addConstraints([new Joint([0,20,0], [0,0,0],floor.physics,bodies[0],0.1, 0.0)], 'name')
 objects.push(...bodies.map(b=> ({physics : b, sprite : box})))
-
+*/
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
 document.addEventListener('keypress', (e) => {if(e.key === 'p')sim.tick(0.015)})

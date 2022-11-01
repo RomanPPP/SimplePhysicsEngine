@@ -54,6 +54,11 @@ class Constraint {
       this.J[3] = [0,0,0]
       
     }
+    //JMJ* = JB;B = MJ*
+    this.B = [
+      [...this.JM[0], ...this.JM[1]],
+      [...this.JM[2], ...this.JM[3]]
+    ]
     this.effMass =
       M1 + dot(this.JM[0], this.J[1]) + M2 + dot(this.JM[3], this.J[3]);
 
