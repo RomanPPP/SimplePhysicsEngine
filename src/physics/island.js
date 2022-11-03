@@ -157,23 +157,7 @@ export default class Island {
     }*/
   }
   //J * Vel
-  initializeJV(deltaTime){
-    const {JV, constraints, size} = this
-    for(let i = 0; i < size; i++){
-      const constraint = constraints[i]
-      JV[i] = constraint.bias
-    }
-  }
-  //J * pseudoVel
-  initializeJpV(deltaTime){
-    const {JpV, constraints, size} = this
-    for(let i = 0; i < size; i++){
-      const constraint = constraints[i]
-      JV[i] = -constraint.relativeVelocityNormalProjection +
-      (Math.max(0, constraint.penDepth - constraint.treshold) / deltaTime) *
-        constraint.biasFactor; 
-    }
-  }
+  
   solvePGS(deltaTime){
 
     
@@ -203,7 +187,7 @@ export default class Island {
     
       
     }
-    
+  
     //PGS
  
     
@@ -224,9 +208,12 @@ export default class Island {
         
         lambda0[i] = lambda[i]
         lambda[i] = Math.max(c.lambdaMin, Math.min(lambda0[i] + deltaLambda, c.lambdaMax))
+        
         deltaLambda = lambda[i] - lambda0[i]
+        
         Bl[b1] = vec6.sum(Bl[b1], vec6.scale(c.B[0], deltaLambda))
         Bl[b2] = vec6.sum(Bl[b2], vec6.scale(c.B[1], deltaLambda))
+      
       }
       numIter--
     }

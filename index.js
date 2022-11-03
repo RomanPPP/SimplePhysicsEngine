@@ -116,7 +116,7 @@ const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
 const cube2 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 const cube3 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
-const cube4 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
+const cube4 = { physics: new Player(new Box(2, 2, 2)), sprite: box };
 cube2.physics.translate([0, 4.7, 0]);
 cube4.physics.translate([0, 10, -5]);
 cube3.physics.translate([0, 3, 0]);
@@ -136,10 +136,10 @@ sim.addObject(cube4.physics);
 const objects = [floor,  cube2, cube3, cube4];
 
 
-for(let i = 0; i < 0; i++){
+for(let i = 0; i < 5; i++){
   const cube = { physics: new RigidBody(new Box(10, 5, 15)), sprite: box };
   cube.physics.translate([10, 5 * i +15 , 0])
-  cube.physics.setMass(20);
+  cube.physics.setMass(5);
   cube.physics.addAcceleration([0, -9.8, 0])
   sim.addObject(cube.physics);
   objects.push(cube)
