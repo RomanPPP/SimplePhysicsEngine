@@ -1,31 +1,45 @@
 import { vector, m3 } from "math";
 
 const { dot, cross, normalize, diff, scale, norm, sum, normSq } = vector;
-
-class Constraint {
-  constructor({
+const clamp = (v, min, max) => {
+  if (v > min) {
+    if (v < max) return v;
+    else return max;
+  }
+  return min;
+};
+class Constraint{
+  constructor(
     body1,
     body2,
     n,
     ra,
     rb,
-    biasFactor = 0,
-    pseudoBiasFactor = 0,
-    treshold = 0.001,
-  }) {
+    raLocal,
+    rbLocal,
+    biasFactor,
+    lambdaMin = -Infinity,
+    lambdaMax = Infinity,
+    treshold = 0.0001
+  ){
     this.biasFactor = biasFactor;
     this.n = n;
     this.J = null;
-    this.invMass1 = null;
+    
     this.JM = null;
+    this.B = null
     this.body1 = body1;
     this.body2 = body2;
     this.ra = ra;
     this.rb = rb;
-    this.pseudoBiasFactor = pseudoBiasFactor;
-    this.treshold = 0.0001;
+    this.raLocal = raLocal
+    this.rbLocal = rbLocal
+    this.treshold = treshold
+    this.lambdaAcc = 0
+    this.lambdaMin = lambdaMin
+    this.lambdaMax = lambdaMax
   }
-  updateEq() {
+  updateLeftPart(deltaTime) {
     const { body1, body2, n, ra, rb } = this;
     this.J = [scale(n, -1), cross(n, ra), n, cross(rb, n)];
 
@@ -62,68 +76,67 @@ class Constraint {
     this.effMass =
       M1 + dot(this.JM[0], this.J[1]) + M2 + dot(this.JM[3], this.J[3]);
 
-    this.relativeVelocity = diff(
-      sum(body2.velocity, cross(body2.angularV, rb)),
-      sum(body1.velocity, cross(body1.angularV, ra))
-    );
-
-    this.relativeVelocityNormalProjection = dot(this.relativeVelocity, n);
   }
-  applyResolvingImpulse(lambda) {}
+  
 }
-const clamp = (v, min, max) => {
-  if (v > min) {
-    if (v < max) return v;
-    else return max;
-  }
-  return min;
-};
+
 
 class ContactConstraint extends Constraint {
-  constructor({
-    raLocal,
-    rbLocal,
+  constructor(body1,
+    body2,
+    n,
     ra,
     rb,
-    n,
-    penDepth,
-    body1,
-    body2,
-    i,
-    j,
-    biasFactor = 0,
-    pseudoBiasFactor = 0,
-  }) {
-    super({ ra, rb, n, body1, body2, biasFactor, pseudoBiasFactor });
-    this.penDepth = penDepth;
-    this.initialVelProj = null;
-    this.effMass = null;
-    this.raLocal = raLocal;
-    this.rbLocal = rbLocal;
-    this.J = null;
-    this.accI = 0;
-    this.accFI1 = 0;
-    this.accFI2 = 0;
+    raLocal,
+    rbLocal,
+    biasFactor,
+    treshold, penDepth, i, j) {
+    super(body1,
+      body2,
+      n,
+      ra,
+      rb,
+      raLocal,
+      rbLocal,
+      biasFactor,
+      null, null,
+      treshold,)
+    
+
+    
+    this.penDepth = penDepth
     this.i = i;
     this.j = j;
-    this.reducer = 1;
-    this.relativeVelocity = null;
+    
   }
-
-  applyResolvingImpulse(lambda) {
-    if (lambda < 0) return;
-    const max = this.effMass * 10;
-    //lambda = Math.min(10, lambda);
-    const maxLambda = norm(
+  updateLeftPart(deltaTime){
+    super.updateLeftPart(deltaTime)
+    this.lambdaMax = norm(
       sum(
         scale(this.body1.velocity, this.body1.mass),
         scale(this.body2.velocity, this.body2.mass)
       )
     );
-    lambda = Math.min(lambda, maxLambda);
+    this.lambdaMin = 0
+  }
+  updateRightPart(deltaTime){
+    const {body1, body2, ra, rb, n, penDepth, treshold, biasFactor} = this
+
+ 
+    const relativeVelocity = diff(
+      sum(body2.velocity, cross(body2.angularV, rb)),
+      sum(body1.velocity, cross(body1.angularV, ra))
+    );
+
+    const relativeVelocityNormalProjection = dot(relativeVelocity, n);
+    this.bias = (Math.max(0, penDepth - treshold) / deltaTime) * biasFactor
+               - relativeVelocityNormalProjection 
+  }
+  applyResolvingImpulse(lambda) {
+   
     this.body1.applyImpulse(scale(this.J[0], lambda), this.ra);
     this.body2.applyImpulse(scale(this.J[2], lambda), this.rb);
-    this.applyFrictionImpulse(lambda);
+   // this.applyFrictionImpulse(lambda);
   }
   applyFrictionImpulse(lambda) {
     const { ra, rb, body1, body2, i, j } = this;
@@ -174,6 +187,26 @@ class ContactConstraint extends Constraint {
   }
 }
 
+class FrictionConstraint extends Constraint{
+  updateRightPart(deltaTime){
+    const {body1, body2, ra, rb, n} = this
+
+ 
+    const relativeVelocity = diff(
+      sum(body2.velocity, cross(body2.angularV, rb)),
+      sum(body1.velocity, cross(body1.angularV, ra))
+    );
+
+    const relativeVelocityNormalProjection = dot(relativeVelocity, n);
+    this.bias = - relativeVelocityNormalProjection 
+  }
+  applyResolvingImpulse(lambda) {
+   
+    this.body1.applyImpulse(scale(this.J[0], lambda), this.ra);
+    this.body2.applyImpulse(scale(this.J[2], lambda), this.rb);
+   // this.applyFrictionImpulse(lambda);
+  }
+}
 class Joint extends Constraint {
   constructor(
     localRa,
@@ -246,4 +279,4 @@ class Joint extends Constraint {
     this.body2.applyPseudoImpulse(scale(this.J[2], lambda), [0, 0, 0]);
   }
 }
-export { ContactConstraint, Constraint, Joint };
+export { ContactConstraint, Constraint, Joint, FrictionConstraint};

@@ -35,10 +35,9 @@ const vec6 = {
 export default class Island {
   constructor(...constraints) {
     this.constraints = [...constraints];
-    this.JMJ = null;
-    this.JV = null;
-    this.JpV = null;
-    this.JMJp = null;
+    this.size = this.constraints.length
+    
+
   }
   addConstraint(...args) {
     this.constraints.push(...args);
@@ -77,7 +76,7 @@ export default class Island {
 
     //Numerating bodies
     this.generateBodyMapping()
-    for (let i = 0; i < n; i++) {
+    /*for (let i = 0; i < n; i++) {
       const constraint = this.constraints[i];
       const { body1, body2, J } = constraint;
       const k = i * n;
@@ -139,30 +138,45 @@ export default class Island {
         this.JMJp[k + j] = () => fp1() + fp2() + fp3() + fp4();
       }
 
-      /*  vec.dot(J[0], body1.velocity) +
+        vec.dot(J[0], body1.velocity) +
         vec.dot(J[1], body1.angularV) +
         vec.dot(J[2], body2.velocity) +
-        vec.dot(J[3], body2.angularV);*/
+        vec.dot(J[3], body2.angularV);
       this.JV[i] = (deltaTime) =>
         -constraint.relativeVelocityNormalProjection +
         (Math.max(0, constraint.penDepth - constraint.treshold) / deltaTime) *
           constraint.biasFactor; //+ b* 0.125;
 
-      /*this.JpV[i] = () => -vec.dot(J[0], body1.pseudoVelocity) -
+      this.JpV[i] = () => -vec.dot(J[0], body1.pseudoVelocity) -
                             vec.dot(J[1], body1.pseudoAngularV) -
                             vec.dot(J[2], body2.pseudoVelocity) -
-                           vec.dot(J[3], body2.pseudoAngularV) - constraint.bias/deltaTime */
+                           vec.dot(J[3], body2.pseudoAngularV) - constraint.bias/deltaTime 
       this.JpV[i] = (deltaTime) =>
         (Math.max(0, constraint.penDepth - constraint.treshold) / deltaTime) *
         constraint.pseudoBiasFactor;
+    }*/
+  }
+  //J * Vel
+  initializeJV(deltaTime){
+    const {JV, constraints, size} = this
+    for(let i = 0; i < size; i++){
+      const constraint = constraints[i]
+      JV[i] = constraint.bias
     }
   }
-
-  
+  //J * pseudoVel
+  initializeJpV(deltaTime){
+    const {JpV, constraints, size} = this
+    for(let i = 0; i < size; i++){
+      const constraint = constraints[i]
+      JV[i] = -constraint.relativeVelocityNormalProjection +
+      (Math.max(0, constraint.penDepth - constraint.treshold) / deltaTime) *
+        constraint.biasFactor; 
+    }
+  }
   solvePGS(deltaTime){
 
-    const minLambda = 0, maxLambda = 10
-    const _JV = this.getJV(deltaTime)
+    
     const {Jmap, bodiesMap, constraints} = this
     const numBodies = bodiesMap.size
     const n = constraints.length
@@ -182,14 +196,14 @@ export default class Island {
       
       const y = vec6.sum(x, Bl[b1])
       
-      Bl[b1] = vec6.scale(constraints[i].B[0], lambda0[i])
+      Bl[b1] = vec6.sum(vec6.scale(constraints[i].B[0], lambda0[i]), Bl[b1])
       
       
       Bl[b2] = vec6.sum(vec6.scale(constraints[i].B[1], lambda0[i]), Bl[b2])
     
       
     }
-
+    
     //PGS
  
     
@@ -197,6 +211,7 @@ export default class Island {
     for(let i = 0; i< n; i++){
       d.push(constraints[i].effMass)
     }
+
     while(numIter > 0){
       for(let i = 0; i < n; i++){
         const c = constraints[i]
@@ -205,10 +220,10 @@ export default class Island {
         const b1 = Jmap[i * 2 ]
         const b2 = Jmap[i * 2 + 1]
        
-        let deltaLambda = (_JV[i] - vec6.dot(J1, Bl[b1]) - vec6.dot(J2, Bl[b2])) / d[i]
-       
+        let deltaLambda = (c.bias - vec6.dot(J1, Bl[b1]) - vec6.dot(J2, Bl[b2])) / d[i]
+        
         lambda0[i] = lambda[i]
-        lambda[i] = Math.max(minLambda, Math.min(lambda0[i] + deltaLambda, maxLambda))
+        lambda[i] = Math.max(c.lambdaMin, Math.min(lambda0[i] + deltaLambda, c.lambdaMax))
         deltaLambda = lambda[i] - lambda0[i]
         Bl[b1] = vec6.sum(Bl[b1], vec6.scale(c.B[0], deltaLambda))
         Bl[b2] = vec6.sum(Bl[b2], vec6.scale(c.B[1], deltaLambda))
@@ -219,6 +234,7 @@ export default class Island {
     for(let i = 0; i < n; i++){
       constraints[i].applyResolvingImpulse(lambda[i])
     }
+    return lambda
   }
   getJMJ() {
     return this.JMJ.map((f) => f());

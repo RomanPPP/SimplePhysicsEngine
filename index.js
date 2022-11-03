@@ -116,7 +116,7 @@ const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
 const cube2 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 const cube3 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
-const cube4 = { physics: new Player(new Box(2, 2, 2)), sprite: box };
+const cube4 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 cube2.physics.translate([0, 4.7, 0]);
 cube4.physics.translate([0, 10, -5]);
 cube3.physics.translate([0, 3, 0]);

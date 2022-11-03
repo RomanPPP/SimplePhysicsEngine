@@ -43,6 +43,7 @@ export default class Manifold {
       contact.ra = _ra;
       contact.rb = _rb;
       contact.penDepth = dot(contact.n, diff(_PB, _PA));
+      
     }
   }
 }

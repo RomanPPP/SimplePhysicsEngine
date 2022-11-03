@@ -1,5 +1,5 @@
 import Tree from "./tree";
-
+import {vector} from 'math'
 import {
   solveCollision,
   solveContactPositionErr,
@@ -11,7 +11,7 @@ import { gjk } from "./gjk";
 import Manifold from "./manifold";
 import Island from "./island";
 import { GaussSeidel } from "./GSsolver";
-import { ContactConstraint } from "./contact";
+import { Constraint, ContactConstraint, FrictionConstraint } from "./contact";
 
 const sameGroup = (body1, body2) => {
   if (!body1.group) return;
@@ -96,22 +96,37 @@ export default class Simulation {
       this.objects[i].integrateForces(deltaTime);
     }
     const system = new Island();
+    const frictionSystem = new Island()
+    const contactConstraints = []
+    const frictionConstraints = []
     for (let [key, manifold] of manifolds) {
       const useVelocityBias = manifold.contacts.length < 3;
-      const contacts = manifold.contacts.map((c) => {
-        const constraint = new ContactConstraint(c);
+      
+      const contacts = manifold.contacts.forEach((c) => {
+        const {body1, body2, raLocal, rbLocal, ra, rb, i, j, penDepth, n} = c
+        const constraint = new ContactConstraint(body1, body2, n, ra, rb, raLocal, rbLocal, null, null, penDepth, i, j)
+        
+        const fConstraint1 = new FrictionConstraint(body1, body2, vector.scale(i, -1), ra, rb, raLocal, rbLocal, 0, -body1.friction - body2.friction, body1.friction + body2.friction, null)
+        const fConstraint2 = new FrictionConstraint(body1, body2, vector.scale(j, -1), ra, rb, raLocal, rbLocal, 0, -body1.friction - body2.friction, body1.friction + body2.friction, null)
+        
         if (1) {
           constraint.biasFactor = 0.12;
         } 
-        return constraint;
+        constraint.updateLeftPart(deltaTime);
+        constraint.updateRightPart(deltaTime)
+        fConstraint1.updateLeftPart(deltaTime)
+        fConstraint2.updateLeftPart(deltaTime)
+        fConstraint1.updateRightPart(deltaTime)
+        fConstraint2.updateRightPart(deltaTime)
+        contactConstraints.push(constraint)
+        frictionConstraints.push(fConstraint1, fConstraint2)
       });
 
-      for (let i = 0, n = contacts.length; i < n; i++) {
-        contacts[i].updateEq();
-      }
-      system.addConstraint(...contacts);
+      
+      
     }
-
+    system.addConstraint(...contactConstraints);
+    frictionSystem.addConstraint(...frictionConstraints)
     system.generateSystem(deltaTime);
     /*
     const lambda = GaussSeidel(
@@ -122,8 +137,17 @@ export default class Simulation {
     );
     system.applyResolvingImpulses(lambda);
     */
-   system.solvePGS(deltaTime)
-/*
+    const lambda = system.solvePGS(deltaTime)
+    for(let i = 0, n = lambda.length; i < n; i++){
+      frictionConstraints[2*i].lambdaMin *= lambda[i]
+      frictionConstraints[2*i].lambdaMax *= lambda[i]
+      frictionConstraints[2*i + 1].lambdaMin *= lambda[i]
+      frictionConstraints[2*i + 1].lambdaMax *= lambda[i]
+
+    }
+    frictionSystem.generateSystem(deltaTime)
+    frictionSystem.solvePGS(deltaTime)
+/*  
     for (const [name, constraints] of this.constraints) {
       const system = constraints[0];
       system.constraints.forEach((c) => c.updateEq());
