@@ -136,10 +136,10 @@ sim.addObject(cube4.physics);
 const objects = [floor,  cube2, cube3, cube4];
 
 
-for(let i = 0; i < 5; i++){
-  const cube = { physics: new RigidBody(new Box(10, 5, 15)), sprite: box };
-  cube.physics.translate([10, 5 * i +15 , 0])
-  cube.physics.setMass(5);
+for(let i = 0; i < 3; i++){
+  const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
+  cube.physics.translate([10, 5 * i +15 , i*0.1])
+  cube.physics.setMass(20);
   cube.physics.addAcceleration([0, -9.8, 0])
   sim.addObject(cube.physics);
   objects.push(cube)
@@ -150,9 +150,9 @@ floor.physics.setMass(100000000);
 
 
 floor.physics.translate([0, -3, 0]);
-//floor.physics.rotate([0.0,0,0])
-//floor.static = true
 
+floor.static = true
+floor.DOF = [0,0,0,0,0,0]
 const player = new Controllable(cube4.physics)
 
 player.listenKeyboard(keyInput)

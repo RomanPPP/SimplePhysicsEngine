@@ -17,7 +17,7 @@ class Constraint{
     rb,
     raLocal,
     rbLocal,
-    biasFactor,
+    biasFactor = 0,
     lambdaMin = -Infinity,
     lambdaMax = Infinity,
     treshold = 0.0001
@@ -41,7 +41,27 @@ class Constraint{
   }
   updateLeftPart(deltaTime) {
     const { body1, body2, n, ra, rb } = this;
-    this.J = [scale(n, -1), cross(n, ra), n, cross(rb, n)];
+    const J = [scale(n, -1), cross(n, ra), n, cross(rb, n)];
+    const dof1 = body1.DOF
+    const dof2 = body1.DOF
+
+    J[0][0] *= dof1[0]
+    J[0][1] *= dof1[1]
+    J[0][2] *= dof1[2]
+
+    J[1][0] *= dof1[3]
+    J[1][1] *= dof1[4]
+    J[1][2] *= dof1[5]
+
+    J[2][0] *= dof2[0]
+    J[2][1] *= dof2[1]
+    J[2][2] *= dof2[2]
+
+    J[3][0] *= dof2[3]
+    J[3][1] *= dof2[4]
+    J[3][2] *= dof2[5]
+
+    this.J = J
 
     const I1 = body1.inverseInertia;
     const I2 = body2.inverseInertia;
@@ -111,11 +131,11 @@ class ContactConstraint extends Constraint {
   updateLeftPart(deltaTime){
     super.updateLeftPart(deltaTime)
     this.lambdaMax = norm(
-      diff(
+      sum(
         scale(this.body1.velocity, this.body1.mass),
         scale(this.body2.velocity, this.body2.mass)
       )
-    )*0.5
+    )
     this.lambdaMin = 0
   }
   updateRightPart(deltaTime){

@@ -1,16 +1,11 @@
 import Tree from "./tree";
 import { vector } from "math";
-import {
-  solveCollision,
-  solveContactPositionErr,
-  warmStart,
-  solvePosition,
-} from "./constraints";
+
 import { gjk } from "./gjk";
 
 import Manifold from "./manifold";
 import Island from "./island";
-import { GaussSeidel } from "./GSsolver";
+
 import {
   Constraint,
   ContactConstraint,
@@ -105,7 +100,7 @@ export default class Simulation {
     const contactConstraints = [];
     const frictionConstraints = [];
     for (let [key, manifold] of manifolds) {
-      const useVelocityBias = manifold.contacts.length < 3;
+      const useVelocityBias = manifold.contacts.length <3;
 
       manifold.contacts.forEach((c) => {
         const { body1, body2, raLocal, rbLocal, ra, rb, i, j, penDepth, n } = c;
@@ -117,8 +112,8 @@ export default class Simulation {
           rb,
           raLocal,
           rbLocal,
-          null,
-          null,
+          0,
+          0.00001,
           penDepth,
           i,
           j
@@ -151,8 +146,8 @@ export default class Simulation {
           null
         );
 
-        if (1) {
-          constraint.biasFactor = 0.12;
+        if (useVelocityBias) {
+          constraint.biasFactor = 0.125;
         }
         constraint.updateLeftPart(deltaTime);
         constraint.updateRightPart(deltaTime);
@@ -176,18 +171,7 @@ export default class Simulation {
     }
     frictionSystem.generateSystem(deltaTime);
     frictionSystem.solvePGS(deltaTime);
-    /*  
-    for (const [name, constraints] of this.constraints) {
-      const system = constraints[0];
-      system.constraints.forEach((c) => c.updateEq());
-
-      const JMJ = system.getJMJ();
-      const JV = system.getJV(deltaTime);
-
-      const lambda = GaussSeidel(JMJ, JV, system.constraints.length, 1e-12);
-
-      system.applyResolvingImpulses(lambda);
-    }*/
+   
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
@@ -220,8 +204,8 @@ export default class Simulation {
               rb,
               raLocal,
               rbLocal,
-              0.12,
-              0.001,
+              1,
+              0.00001,
               penDepth
             );
             constraint.updateLeftPart(deltaTime)

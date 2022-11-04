@@ -165,7 +165,7 @@ export default class Island {
     const numBodies = bodiesMap.size
     const n = constraints.length
     const d = []
-    let numIter = 10
+    
     const lambda0 = new Array(n).fill(0)
 
 
@@ -195,8 +195,9 @@ export default class Island {
     for(let i = 0; i< n; i++){
       d.push(constraints[i].effMass)
     }
-
-    while(numIter > 0){
+    let flag = true
+    let numIter = 20
+    while(numIter > 0 ){
       for(let i = 0; i < n; i++){
         const c = constraints[i]
         const J1 = [...c.J[0], ...c.J[1]]
@@ -215,6 +216,7 @@ export default class Island {
         Bl[b2] = vec6.sum(Bl[b2], vec6.scale(c.B[1], deltaLambda))
       
       }
+      
       numIter--
     }
     

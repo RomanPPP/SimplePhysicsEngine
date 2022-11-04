@@ -6,6 +6,7 @@ const stopTreshold = 0.005;
 class RigidBody extends EventEmitter {
   constructor(collider) {
     super();
+    this.DOF = [1,1,1,1,1,1]
     this.static = false;
     this.collider = collider;
     this.mass = 1;
@@ -69,7 +70,7 @@ class RigidBody extends EventEmitter {
   }
   integrateForces(dt) {
     let deltaSpeed = scale(this.acceleration, dt);
-    this.intVelocity = sum(this.velocity,scale(this.acceleration, 3/3 *dt))
+    
     this.velocity = sum(this.velocity, deltaSpeed);
   }
   updateInverseInertia() {
@@ -94,6 +95,7 @@ class RigidBody extends EventEmitter {
   }
 
   applyImpulse(impulse, point) {
+    if (this.static) return;
     this.velocity = sum(this.velocity, scale(impulse, this.inverseMass));
     const angularImpulse = m3.transformPoint(
       this.inverseInertia,
@@ -102,6 +104,7 @@ class RigidBody extends EventEmitter {
     this.angularV = sum(this.angularV, angularImpulse);
   }
   applyPseudoImpulse(impulse, point) {
+    if (this.static) return;
     this.pseudoVelocity = sum(
       this.pseudoVelocity,
       scale(impulse, this.inverseMass)
@@ -113,13 +116,13 @@ class RigidBody extends EventEmitter {
     this.pseudoAngularV = sum(this.pseudoAngularV, angularImpulse);
   }
   addVelocity(v) {
-    chkV(v);
-    if (this.static) return;
+  
+    
     this.velocity = sum(this.velocity, v);
   }
   addAngularV(v) {
-    chkV(v);
-    if (this.static) return;
+   
+    
     this.angularV = sum(this.angularV, v);
   }
   addAcceleration(v) {
@@ -143,12 +146,14 @@ class RigidBody extends EventEmitter {
   getAABB() {
     return this.collider.getAABB();
   }
+  
 }
 
 class Player extends RigidBody {
   constructor() {
     super(...arguments);
     this.friction = 0.0;
+    this.DOF = [1,1,1, 0,0,0]
   }
   applyImpulse(impulse, point) {
     this.velocity = sum(this.velocity, scale(impulse, this.inverseMass));
