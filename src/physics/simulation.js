@@ -11,7 +11,7 @@ import {
   ContactConstraint,
   FrictionConstraint,
   PositionConstraint,
-} from "./contact";
+} from "./constraints";
 
 const sameGroup = (body1, body2) => {
   if (!body1.group) return;

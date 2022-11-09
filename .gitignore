@@ -6,3 +6,4 @@ src/physics/terrain.js
 src/physics/noise.js
 src/game/objects.js
 src/game/config.js
+src/physics/createRagdoll.js

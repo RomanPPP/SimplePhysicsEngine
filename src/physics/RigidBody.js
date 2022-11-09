@@ -23,15 +23,7 @@ class RigidBody extends EventEmitter {
     this.oldVelocity = null
     this.group = null
   }
-  integrate(dt) {
-    const { acceleration, velocity, translation } = this;
-
-    this.translate(scale(this.velocity, dt));
-    const rotation = scale(this.angularV, dt );
-    if (norm(rotation) > stopTreshold) this.rotate(rotation);
-    let deltaSpeed = scale(this.acceleration, dt);
-    this.velocity = sum(this.velocity, deltaSpeed);
-  }
+  
   integrateRK4(dt){
     const {acceleration, velocity, angularV} = this
     

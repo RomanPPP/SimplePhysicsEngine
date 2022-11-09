@@ -1,12 +1,16 @@
-export default class Keylogger {
+import { EventEmitter } from "../physics/eventEmitter";
+
+export default class KeyInput extends EventEmitter {
   constructor() {
     this.keys = new Set();
   }
   logDown({ key }) {
     this.keys.add(key);
+    this.emit("keydown", { key });
   }
   logUp({ key }) {
     this.keys.delete(key);
+    this.emit("keyup", { key });
   }
   listen() {
     const logDown = this.logDown.bind(this);

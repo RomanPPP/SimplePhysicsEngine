@@ -33,14 +33,11 @@ const vec6 = {
 }
 
 export default class Island {
-  constructor(...constraints) {
+  constructor(constraints) {
     this.constraints = [...constraints];
     this.size = this.constraints.length
     
 
-  }
-  addConstraint(...args) {
-    this.constraints.push(...args);
   }
   generateBodyMapping(){
     const constraints = this.constraints
@@ -76,6 +73,8 @@ export default class Island {
 
     //Numerating bodies
     this.generateBodyMapping()
+
+
     /*for (let i = 0; i < n; i++) {
       const constraint = this.constraints[i];
       const { body1, body2, J } = constraint;
@@ -224,25 +223,6 @@ export default class Island {
       constraints[i].applyResolvingImpulse(lambda[i])
     }
     return lambda
-  }
-  getJMJ() {
-    return this.JMJ.map((f) => f());
-  }
-  getJV(deltaTime) {
-    return this.JV.map((f) => f(deltaTime));
-  }
-  getJpV(deltaTime) {
-    return this.JpV.map((f) => f(deltaTime));
-  }
-  getJMJp() {
-    return this.JMJp.map((f) => f());
-  }
-  getUpdatedValues(deltaTime) {
-    return [
-      this.JMJ.map((f) => f()),
-      this.JV.map((f) => f()),
-      this.JpV.map((f) => f(deltaTime)),
-    ];
   }
   applyResolvingImpulses(lambda) {
     for (let i = 0, n = this.constraints.length; i < n; i++) {
