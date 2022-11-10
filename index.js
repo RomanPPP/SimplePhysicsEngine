@@ -162,7 +162,7 @@ for(let i = 0; i < 3; i++){
   sim.addObject(cube.physics);
   objects.push(cube)
 }
-
+sim.addConstraints([new Joint(floor.physics, objects.at(-1).physics, [20,20,0],[0,3,0],0.1)], 'asda')
 floor.physics.setMass(100000000);
 
 
