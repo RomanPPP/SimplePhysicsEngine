@@ -294,7 +294,7 @@ class Joint extends Constraint {
 
     const relativeVelocityNormalProjection = dot(relativeVelocity, n);
     this.bias = (biasFactor  *Math.max(penDepth - treshold, 0)/deltaTime) - relativeVelocityNormalProjection*0.8;
-    console.log(this.bias)
+   
   }
   applyResolvingImpulse(lambda) {
    
