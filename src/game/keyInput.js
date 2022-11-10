@@ -2,6 +2,7 @@ import { EventEmitter } from "../physics/eventEmitter";
 
 export default class KeyInput extends EventEmitter {
   constructor() {
+    super()
     this.keys = new Set();
   }
   logDown({ key }) {

@@ -42,11 +42,7 @@ export default class Simulation {
     this.objects.push(object);
   }
   addConstraints(constraints, name) {
-    const system = new Island(...constraints);
-    system.generateSystem();
-    const positionSystem = new Island(...constraints);
-    positionSystem.generateSystem();
-    this.constraints.set(name, [system, positionSystem]);
+    this.constraints.set(name, [...constraints])
   }
   updateObjectAABB(object) {
     const newAABB = object.getAABB();
@@ -149,21 +145,24 @@ export default class Simulation {
         if (useVelocityBias) {
           constraint.biasFactor = 0.125;
         }
-        constraint.updateLeftPart(deltaTime);
-        constraint.updateRightPart(deltaTime);
-        fConstraint1.updateLeftPart(deltaTime);
-        fConstraint2.updateLeftPart(deltaTime);
-        fConstraint1.updateRightPart(deltaTime);
-        fConstraint2.updateRightPart(deltaTime);
+        
         contactConstraints.push(constraint);
         frictionConstraints.push(fConstraint1, fConstraint2);
       });
     }
-    system.addConstraint(...contactConstraints);
-    frictionSystem.addConstraint(...frictionConstraints);
+    system.addConstraint(contactConstraints);
+    for(let [name, constraints] of this.constraints){
+      system.addConstraint(constraints)
+    }
+
+    system.updateEquations(deltaTime)
+    frictionSystem.addConstraint(frictionConstraints);
+  
+    frictionSystem.updateEquations(deltaTime)
     system.generateSystem(deltaTime);
     const lambda = system.solvePGS(deltaTime);
-    for (let i = 0, n = lambda.length; i < n; i++) {
+    const len = frictionConstraints.length/2
+    for (let i = 0; i < len; i++) {
       frictionConstraints[2 * i].lambdaMin *= lambda[i];
       frictionConstraints[2 * i].lambdaMax *= lambda[i];
       frictionConstraints[2 * i + 1].lambdaMin *= lambda[i];
@@ -215,7 +214,7 @@ export default class Simulation {
         );
       }
     }
-    positionSystem.addConstraint(...positionConstraints)
+    positionSystem.addConstraint(positionConstraints)
     positionSystem.generateSystem(deltaTime);
     
     positionSystem.solvePGS(deltaTime)

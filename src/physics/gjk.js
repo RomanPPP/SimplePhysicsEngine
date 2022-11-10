@@ -1,6 +1,6 @@
 import { vector, m3, m4 } from "math";
 import { clip, isInClockwise } from "./clipping";
-import { Contact } from "./contact";
+
 const { dot, cross, normalize, sum, diff, len, scale, isNull, norm } = vector;
 const clipBias = 0.05;
 const GJK_MAX_ITERATIONS_NUM = 64;

@@ -31,13 +31,17 @@ const vec6 = {
   }
 
 }
-
+const norm = v => Math.sqrt(v.reduce((acc,el) => acc+=el*el, 0))
 export default class Island {
   constructor(constraints) {
-    this.constraints = [...constraints];
-    this.size = this.constraints.length
+    this.constraints = [];
+
     
 
+  }
+  addConstraint(constraints){
+    this.constraints.push(...constraints)
+    
   }
   generateBodyMapping(){
     const constraints = this.constraints
@@ -175,9 +179,7 @@ export default class Island {
       const b1 = Jmap[i * 2 ]
       const b2 = Jmap[i * 2 + 1] 
     
-      const x = vec6.scale(constraints[i].B[0], lambda0[i])
-      
-      const y = vec6.sum(x, Bl[b1])
+     
       
       Bl[b1] = vec6.sum(vec6.scale(constraints[i].B[0], lambda0[i]), Bl[b1])
       
@@ -195,7 +197,9 @@ export default class Island {
       d.push(constraints[i].effMass)
     }
     let flag = true
-    let numIter = 20
+    let numIter = 15
+
+    const deltaLambda = new Array(n).fill(0)
     while(numIter > 0 ){
       for(let i = 0; i < n; i++){
         const c = constraints[i]
@@ -204,25 +208,33 @@ export default class Island {
         const b1 = Jmap[i * 2 ]
         const b2 = Jmap[i * 2 + 1]
        
-        let deltaLambda = (c.bias - vec6.dot(J1, Bl[b1]) - vec6.dot(J2, Bl[b2])) / d[i]
+        deltaLambda[i] = (c.bias - vec6.dot(J1, Bl[b1]) - vec6.dot(J2, Bl[b2])) / d[i]
         
         lambda0[i] = lambda[i]
-        lambda[i] = Math.max(c.lambdaMin, Math.min(lambda0[i] + deltaLambda, c.lambdaMax))
+        lambda[i] = Math.max(c.lambdaMin, Math.min(lambda0[i] + deltaLambda[i], c.lambdaMax))
         
-        deltaLambda = lambda[i] - lambda0[i]
+        deltaLambda[i] = lambda[i] - lambda0[i]
         
-        Bl[b1] = vec6.sum(Bl[b1], vec6.scale(c.B[0], deltaLambda))
-        Bl[b2] = vec6.sum(Bl[b2], vec6.scale(c.B[1], deltaLambda))
+        Bl[b1] = vec6.sum(Bl[b1], vec6.scale(c.B[0], deltaLambda[i]))
+        Bl[b2] = vec6.sum(Bl[b2], vec6.scale(c.B[1], deltaLambda[i]))
       
       }
       
       numIter--
     }
-    
+   
     for(let i = 0; i < n; i++){
       constraints[i].applyResolvingImpulse(lambda[i])
     }
     return lambda
+  }
+  updateEquations(deltaTime){
+    const {constraints} = this
+    const n = constraints.length
+    for(let i = 0; i < n; i ++){
+      constraints[i].updateLeftPart(deltaTime)
+      constraints[i].updateRightPart(deltaTime)
+    }
   }
   applyResolvingImpulses(lambda) {
     for (let i = 0, n = this.constraints.length; i < n; i++) {

@@ -23,12 +23,12 @@ import {
   defaultProgram,
 } from "graphics";
 
-import MouseInput from "./src/game/mouse";
-import Keylogger from "./src/game/keylogger";
+import MouseInput from "./src/game/mouseInput";
+import KeyInput from "./src/game/keyInput";
 const mouseInput = new MouseInput()
 
 mouseInput.listen() 
-const keyInput = new Keylogger()
+const keyInput = new KeyInput()
 keyInput.listen()
 const context = new GLcontextWrapper("canvas");
 const gl = context.getContext();
@@ -103,8 +103,9 @@ import { Player, RigidBody } from "./src/physics/RigidBody";
 import { Box } from "./src/physics/collider";
 import {Controllable, Noclip} from "./src/game/controllable";
 
-import { Joint } from "./src/physics/contact";
-import createRagdoll from "./src/physics/createRagdoll";
+import { Joint } from "./src/physics/constraints";
+
+
 
 
 
@@ -141,6 +142,23 @@ for(let i = 0; i < 3; i++){
   cube.physics.translate([10, 5 * i +15 , i*0.1])
   cube.physics.setMass(20);
   cube.physics.addAcceleration([0, -9.8, 0])
+  sim.addObject(cube.physics);
+  objects.push(cube)
+}
+
+for(let i = 0; i < 3; i++){
+  const cube = { physics: new RigidBody(new Box(2, 5, 2)), sprite: box };
+  cube.physics.translate([20, 5 * i +15 , i*2])
+  cube.physics.setMass(5);
+  cube.physics.addAcceleration([0, -9.8, 0])
+  cube.physics.friction = 0
+  cube.physics.group = 1
+  if(i > 0){
+    const c = new Joint(cube.physics, objects.at(-1).physics, [0,-3,0],[0,3,0],0.1)
+    sim.addConstraints([c], i)
+   // cube.physics.static = true
+  
+  }
   sim.addObject(cube.physics);
   objects.push(cube)
 }
@@ -252,7 +270,26 @@ const loop = () => {
     },
     cameraMatrix
   )
- 
+  for(const [name, constraints] of sim.constraints){
+    constraints.forEach(c=>{
+      points.draw(
+        {
+          u_matrix: m4.translation(...c.PA),
+          u_color: [1.0, 0.0, 0.1, 1],
+          u_worldViewPosition: cameraMatrix,
+        },
+        cameraMatrix
+      )
+      points.draw(
+        {
+          u_matrix: m4.translation(...c.PB),
+          u_color: [1.0, 0.0, 0.1, 1],
+          u_worldViewPosition: cameraMatrix,
+        },
+        cameraMatrix
+      )
+    })
+  }
     
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   requestAnimationFrame(loop)
