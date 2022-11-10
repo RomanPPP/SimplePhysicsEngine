@@ -74,25 +74,14 @@ class Constraint {
       m3.transformPoint(I2, this.J[3]),
     ];
 
-    if (body1.static) {
-      this.JM[0] = [0, 0, 0];
-      this.JM[1] = [0, 0, 0];
-      this.J[0] = [0, 0, 0];
-      this.J[1] = [0, 0, 0];
-    }
-    if (body1.static) {
-      this.JM[2] = [0, 0, 0];
-      this.JM[3] = [0, 0, 0];
-      this.J[2] = [0, 0, 0];
-      this.J[3] = [0, 0, 0];
-    }
+    
     //JMJ* = JB;B = MJ*
     this.B = [
       [...this.JM[0], ...this.JM[1]],
       [...this.JM[2], ...this.JM[3]],
     ];
     this.effMass =
-      M1 + dot(this.JM[1], this.J[1]) + M2 + dot(this.JM[3], this.J[3]);
+      dot(J[0], this.JM[0]) + dot(this.JM[1], this.J[1]) +dot(J[2], this.JM[2]) + dot(this.JM[3], this.J[3]);
   }
 }
 
@@ -222,7 +211,7 @@ class Joint extends Constraint {
     super(body1, body2, null, null, null, raLocal, rbLocal, biasFactor);
     
     
-    this.treshold = 0.01;
+    this.treshold = 0.1;
     this.reducer = 0.5;
     this.maxImpulse = 0.7;
 
@@ -293,7 +282,9 @@ class Joint extends Constraint {
     );
 
     const relativeVelocityNormalProjection = dot(relativeVelocity, n);
+    const fac = penDepth > treshold
     this.bias = (biasFactor  *Math.max(penDepth - treshold, 0)/deltaTime) - relativeVelocityNormalProjection*0.8;
+    this.bias *= fac
    
   }
   applyResolvingImpulse(lambda) {

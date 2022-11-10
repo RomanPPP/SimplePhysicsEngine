@@ -152,7 +152,7 @@ for(let i = 0; i < 3; i++){
   cube.physics.setMass(5);
   cube.physics.addAcceleration([0, -9.8, 0])
   cube.physics.friction = 0
-  cube.physics.group = 1
+  //cube.physics.group = 1
   if(i > 0){
     const c = new Joint(cube.physics, objects.at(-1).physics, [0,-3,0],[0,3,0],0.1)
     sim.addConstraints([c], i)
@@ -162,7 +162,7 @@ for(let i = 0; i < 3; i++){
   sim.addObject(cube.physics);
   objects.push(cube)
 }
-sim.addConstraints([new Joint(floor.physics, objects.at(-1).physics, [20,20,0],[0,3,0],0.1)], 'asda')
+//sim.addConstraints([new Joint(floor.physics, objects.at(-1).physics, [20,20,0],[0,3,0],0.1)], 'asda')
 floor.physics.setMass(100000000);
 
 
