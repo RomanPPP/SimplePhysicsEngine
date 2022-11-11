@@ -12,20 +12,26 @@ const zAxisNegative = scale(zAxis, -1);
 class Collider {
   constructor() {
     this.Rmatrix = m3.identity();
-    this.pos = [];
-    this.scale = [1, 1, 1];
-    this.RS = m3.identity();
-    this.RSinverse = m3.identity();
+    this.RmatrixInverse = m3.identity();
     this.pos = [0, 0, 0];
   }
   translate(v) {
     this.pos = sum(this.pos, v);
   }
-  rotate(v) {
-    this.RSmatrix = m3.xRotate(this.RSmatrix, v[0]);
-    this.RSmatrix = m3.yRotate(this.RSmatrix, v[1]);
-    this.RSmatrix = m3.zRotate(this.RSmatrix, v[2]);
-    this.RmatrixInverse = m3.transpose(this.RSmatrix);
+  setTranslation(translation){
+    this.pos =[...translation]
+  }
+  rotate(r) {
+    this.Rmatrix = m3.xRotate(this.Rmatrix, r[0]);
+    this.Rmatrix = m3.yRotate(this.Rmatrix, r[1]);
+    this.Rmatrix = m3.zRotate(this.Rmatrix, r[2]);
+    this.RmatrixInverse = m3.transpose(this.Rmatrix);
+  }
+  setRotation(r){
+    this.Rmatrix = m3.xRotation(r[0]);
+    this.Rmatrix = m3.yRotate(this.Rmatrix, r[1]);
+    this.Rmatrix = m3.zRotate(this.Rmatrix, r[2]);
+    this.RmatrixInverse = m3.transpose(this.Rmatrix);
   }
   getAABB() {
     const maxX = this.support(xAxis)[0];
@@ -58,6 +64,9 @@ class Collider {
   localToGlobal(v) {
     let global = m3.transformPoint(this.RSmatrix, v);
     return sum(this.pos, global);
+  }
+  getClosestFace(normal){
+
   }
 }
 
@@ -188,6 +197,7 @@ class Box {
     let global = m3.transformPoint(this.Rmatrix, v);
     return sum(this.pos, global);
   }
+  get
 }
 
 export { Box };

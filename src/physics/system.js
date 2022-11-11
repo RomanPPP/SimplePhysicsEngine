@@ -12,7 +12,7 @@ const vec6 = {
     
   },
   scale(a, fac){
-    return a.map(e => e * fac)
+    return [a[0] * fac, a[1] * fac, a[2] * fac, a[3] * fac, a[4]*fac, a[5]*fac]
   },
   sum(a, b){
     return [
@@ -32,7 +32,7 @@ const vec6 = {
 
 }
 const norm = v => Math.sqrt(v.reduce((acc,el) => acc+=el*el, 0))
-export default class Island {
+export default class System {
   constructor(constraints) {
     this.constraints = [];
 
@@ -45,10 +45,12 @@ export default class Island {
   }
   generateBodyMapping(){
     const constraints = this.constraints
+    const n = constraints.length
     const bodiesMap = new Map()
     const Jmap = []
     let counter = 0
-    constraints.forEach(c=>{
+    for(let i = 0; i < n; i++){
+      const c = constraints[i]
       let bodyIndex1 = bodiesMap.get(c.body1.id)
       if(bodyIndex1 === undefined){
         bodyIndex1 = counter++
@@ -61,20 +63,14 @@ export default class Island {
       }
       
       Jmap.push(bodyIndex1, bodyIndex2)
-    }) 
+    }
+    
     this.bodiesMap = bodiesMap
     this.Jmap = Jmap
   }
   generatePseudoVelVector() {}
   generateSystem(deltaTime) {
-    const n = this.constraints.length;
-    const constraints = this.constraints
-    //A = JMJ*, JMJ*x = JV + b
-    this.JMJp = new Array(n * n);
-    this.JMJ = new Array(n * n);
-    this.JV = new Array(n);
-    this.JpV = new Array(n);
-
+   
     //Numerating bodies
     this.generateBodyMapping()
 

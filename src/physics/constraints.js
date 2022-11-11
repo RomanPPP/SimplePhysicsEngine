@@ -283,7 +283,7 @@ class Joint extends Constraint {
 
     const relativeVelocityNormalProjection = dot(relativeVelocity, n);
     const fac = penDepth > treshold
-    this.bias = (biasFactor  *Math.max(penDepth - treshold, 0)/deltaTime) - relativeVelocityNormalProjection*0.8;
+    this.bias = (biasFactor  * Math.max(penDepth**2 - treshold, 0)/deltaTime) - relativeVelocityNormalProjection;
     this.bias *= fac
    
   }
@@ -300,10 +300,22 @@ class Joint extends Constraint {
     this.body2.applyPseudoImpulse(scale(this.n, lambda), [0, 0, 0]);
   }
 }
+class JointPositionConstraint extends Joint{
+  updateRightPart(deltaTime){
+    const { penDepth, treshold, biasFactor } = this;
+    const fac = penDepth > treshold
+    this.bias = (biasFactor  *Math.max(penDepth**2 - treshold, 0)/deltaTime)*fac
+  }
+  applyResolvingImpulse(lambda){
+    this.body1.applyPseudoImpulse(scale(this.J[0], lambda), this.ra);
+    this.body2.applyPseudoImpulse(scale(this.J[2], lambda), this.rb);
+  }
+}
 export {
   ContactConstraint,
   Constraint,
   Joint,
   FrictionConstraint,
   PositionConstraint,
+  JointPositionConstraint
 };

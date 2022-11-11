@@ -4,7 +4,7 @@ import { vector } from "math";
 import { gjk } from "./gjk";
 
 import Manifold from "./manifold";
-import Island from "./island";
+import System from "./system";
 
 import {
   Constraint,
@@ -27,6 +27,7 @@ export default class Simulation {
     this.bvh = new Tree();
     this.collisions = [];
     this.constraints = new Map();
+    this.positionConstraints = new Map();
     this.collisionManifolds = new Map();
     this.lastId = 1;
   }
@@ -43,6 +44,9 @@ export default class Simulation {
   }
   addConstraints(constraints, name) {
     this.constraints.set(name, [...constraints])
+  }
+  addPositionConstraints(constraints, name) {
+    this.positionConstraints.set(name, [...constraints])
   }
   updateObjectAABB(object) {
     const newAABB = object.getAABB();
@@ -91,8 +95,8 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateForces(deltaTime);
     }
-    const system = new Island();
-    const frictionSystem = new Island();
+    const system = new System();
+    const frictionSystem = new System();
     const contactConstraints = [];
     const frictionConstraints = [];
     for (let [key, manifold] of manifolds) {
@@ -174,8 +178,8 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
-    this.objects.forEach((object) => object.updateInverseInertia());
-    const positionSystem = new Island();
+   // this.objects.forEach((object) => object.updateInverseInertia());
+    const positionSystem = new System();
     const positionConstraints = [];
 
     for (const [key, manifold] of manifolds) {
@@ -207,14 +211,17 @@ export default class Simulation {
               0.00001,
               penDepth
             );
-            constraint.updateLeftPart(deltaTime)
-            constraint.updateRightPart(deltaTime)
+           
             return constraint
           })
         );
       }
     }
     positionSystem.addConstraint(positionConstraints)
+    for(let [name, constraints] of this.positionConstraints){
+      positionSystem.addConstraint(constraints)
+    }
+    positionSystem.updateEquations(deltaTime)
     positionSystem.generateSystem(deltaTime);
     
     positionSystem.solvePGS(deltaTime)

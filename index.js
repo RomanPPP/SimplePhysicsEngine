@@ -102,7 +102,7 @@ import Simulation from "./src/physics/simulation";
 import { Player, RigidBody } from "./src/physics/RigidBody";
 import { Box } from "./src/physics/collider";
 import {Controllable, Noclip} from "./src/game/controllable";
-
+import createRagdoll from "./src/physics/createRagdoll";
 import { Joint } from "./src/physics/constraints";
 
 
@@ -146,6 +146,7 @@ for(let i = 0; i < 3; i++){
   objects.push(cube)
 }
 
+const chain = []
 for(let i = 0; i < 3; i++){
   const cube = { physics: new RigidBody(new Box(2, 5, 2)), sprite: box };
   cube.physics.translate([20, 5 * i +15 , i*2])
@@ -155,14 +156,35 @@ for(let i = 0; i < 3; i++){
   //cube.physics.group = 1
   if(i > 0){
     const c = new Joint(cube.physics, objects.at(-1).physics, [0,-3,0],[0,3,0],0.1)
-    sim.addConstraints([c], i)
+    chain.push(c)
+    
    // cube.physics.static = true
   
   }
   sim.addObject(cube.physics);
   objects.push(cube)
 }
-//sim.addConstraints([new Joint(floor.physics, objects.at(-1).physics, [20,20,0],[0,3,0],0.1)], 'asda')
+sim.addConstraints(chain, 'chain')
+
+for(let i = 0; i < 3; i++){
+  const [bodies, constraints, positionConstraints] = createRagdoll([6* i,10,-10])
+
+  bodies.forEach(b=>{
+    sim.addObject(b)
+    b.addAcceleration([0,-9.8,0])
+   // b.group = 'ragdoll' + i
+    objects.push({physics : b, sprite : box})
+  })
+  sim.addConstraints(constraints, 'ragdoll' + i)
+  sim.addPositionConstraints(positionConstraints, 'ragdol' + i)
+}
+
+const platform = new RigidBody(new Box())
+platform.DOF = [0,0,0,0,0,0]
+platform.static = true
+sim.addConstraints([new Joint(platform, objects.at(-1).physics, [0,-1.5,0], [0,2,0],0.1)],'platform')
+platform.translate([20, 10, -10])
+
 floor.physics.setMass(100000000);
 
 
@@ -270,6 +292,7 @@ const loop = () => {
     },
     cameraMatrix
   )
+  
   for(const [name, constraints] of sim.constraints){
     constraints.forEach(c=>{
       points.draw(
