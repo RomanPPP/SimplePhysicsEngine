@@ -21,10 +21,11 @@ import {
   createCone,
   createCircle,
   defaultProgram,
+  lightingProgram
 } from "graphics";
 
-import MouseInput from "./src/game/mouseInput";
-import KeyInput from "./src/game/keyInput";
+import MouseInput from "./src/misc/mouseInput";
+import KeyInput from "./src/misc/keyInput";
 const mouseInput = new MouseInput()
 
 mouseInput.listen() 
@@ -37,6 +38,7 @@ const drawer = new Drawer();
 drawer.setContext(context).update3DProjectionMatrix();
 
 defaultProgram.setContext(context).compileShaders().createUniformSetters();
+lightingProgram.setContext(context).compileShaders().createUniformSetters();
 
 const box = new PrimitiveRenderer(createBox(1, 1, 1));
 
@@ -60,7 +62,7 @@ box
   .setProgramInfo(defaultProgram)
   .createGeometryBuffers()
   .setAttributes()
-  .setMode(2);
+  .setMode(3);
 
 circle
   .setContext(context)
@@ -91,17 +93,17 @@ points
 
 /*
 const uniforms = {
-  u_lightWorldPosition: [0, 0, 10],
-  u_ambientLight: [1, 1, 0.3, 0.11],
-  u_reverseLightDirection: [1, 0, 0],
+  u_lightWorldPosition: [100, 10000, 10000],
+  u_ambientLight: [0.9, 0.9, 0.9, 1.0],
+ 
   u_shininess: 300,
-};
-*/
+};*/
+
 
 import Simulation from "./src/physics/simulation";
 import { Player, RigidBody } from "./src/physics/RigidBody";
 import { Box } from "./src/physics/collider";
-import {Controllable, Noclip} from "./src/game/controllable";
+import {Controllable, Noclip} from "./src/misc/controllable";
 import createRagdoll from "./src/physics/createRagdoll";
 import { Joint } from "./src/physics/constraints";
 
@@ -125,7 +127,7 @@ cube3.physics.translate([0, 3, 0]);
 
 cube2.physics.addAcceleration([0, -9.8, 0]);
 cube3.physics.addAcceleration([0, -9.8, 0]);
-cube4.physics.addAcceleration([0, -9.8, 0]);
+cube4.physics.addAcceleration([0, -9.8*2, 0]);
 
 cube2.physics.setMass(20)
 cube3.physics.setMass(20)
@@ -139,7 +141,7 @@ const objects = [floor,  cube2, cube3, cube4];
 
 for(let i = 0; i < 3; i++){
   const cube = { physics: new RigidBody(new Box(5, 5, 5)), sprite: box };
-  cube.physics.translate([10, 5 * i +15 , i*0.1])
+  cube.physics.translate([10, 5 * i +2.5 , i*0.1])
   cube.physics.setMass(20);
   cube.physics.addAcceleration([0, -9.8, 0])
   sim.addObject(cube.physics);
@@ -199,23 +201,13 @@ player.listenKeyboard(keyInput)
 player.listenMouse(mouseInput)
 
 
-/*
-const [bodies, constraints] = createRagdoll([0,25,0])
-bodies.forEach(b=>{
-  b.addAcceleration([0,-9.8,0])
- 
-  sim.addObject(b)
-}) 
-//sim.addConstraints(constraints, 'ragdoll')
-//sim.addConstraints([new Joint([0,20,0], [0,0,0],floor.physics,bodies[0],0.1, 0.0)], 'name')
-objects.push(...bodies.map(b=> ({physics : b, sprite : box})))
-*/
+
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
-document.addEventListener('keypress', (e) => {if(e.key === 'p')sim.tick(0.015)})
-let i = 0
+
+
 const loop = () => {
-  sim.tick(0.015);
+  sim.tick(0.01666);
   player.tick()
   const curentTime = Date.now();
   const delta = curentTime - lastCall;
@@ -227,44 +219,15 @@ const loop = () => {
   
   const cameraMatrix = player.camMatrix
   
-  i += 0.001;
   
   
-  const manifolds = sim.collisionManifolds.values();
   
-  for (const manifold of manifolds) {
-   
-    
-    manifold.contacts.forEach((contact) => {
-      
-      points
-        .draw({
-          u_matrix: m4.translation(...contact.PA),
-          u_color: [0.6, 0.6, 0.0, 1],
-        }, cameraMatrix)
-        .draw({
-          u_matrix: m4.translation(...contact.PB),
-          u_color: [0.5, 0.1, 0.2, 1],
-        }, cameraMatrix);
-        
-
-       
-        
-
-       
-
-        
-        
-    });
-  }
-  
+ 
   objects.forEach((obj) => {
-    const scale = vector.diff(
-      obj.physics.collider.max,
-      obj.physics.collider.min
-    );
+   
     const u_matrix = obj.physics.collider.getM4()
-    obj.sprite.draw({ u_color: [1, 0, 1, 1], u_matrix }, cameraMatrix);
+   
+    obj.sprite.draw({ u_color: [0.2, 0.5, 1, 0.9], u_matrix}, cameraMatrix);
   });
   
   
@@ -313,7 +276,26 @@ const loop = () => {
       )
     })
   }
+  const manifolds = sim.collisionManifolds.values();
+  
+  for (const manifold of manifolds) {
+   
     
+    manifold.contacts.forEach((contact) => {
+      
+      points
+        .draw({
+          u_matrix: m4.translation(...contact.PA),
+          u_color: [0.6, 0.6, 0.0, 1],
+        }, cameraMatrix)
+        .draw({
+          u_matrix: m4.translation(...contact.PB),
+          u_color: [0.5, 0.1, 0.2, 1],
+        }, cameraMatrix);
+      
+    });
+  }
+  
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   requestAnimationFrame(loop)
 };

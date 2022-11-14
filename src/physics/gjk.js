@@ -310,7 +310,7 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
       const result = baricentric(face, point);
 
       if (isNaN(result[0] + result[1] + result[2])) {
-        console.log("no conv");
+     
         return null;
       }
 
@@ -393,7 +393,7 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
       num_faces++;
     }
   }
-  console.log("no conv");
+  
   return null;
 };
 

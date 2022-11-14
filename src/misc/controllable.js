@@ -3,7 +3,8 @@ const KEYS = {
     'w' : 'moveForward',
     's' : 'moveBackward',
     'a' : 'moveLeft',
-    'd' : 'moveRight'
+    'd' : 'moveRight',
+    ' ' : 'moveUp'
 }
 export default class Controllable{
     constructor(rigidBody){
@@ -16,6 +17,7 @@ export default class Controllable{
         this.deltaRY = 0
         this.camPos = [0,0,10]
         this.camRot = m3.identity()
+        this.jumpReady = true
     }
     listenMouse(mouseInput){
         this.mouseInput = mouseInput
@@ -67,6 +69,14 @@ export default class Controllable{
     }
     moveRight(){
         this.move([1,0, 0])
+    }
+    moveUp(){
+        if(this.jumpReady){
+            this.move([0,15,0])
+            this.jumpReady = false
+            setTimeout(()=>this.jumpReady = true, 1000)
+        }
+        
     }
 }
 class Noclip{
@@ -122,6 +132,9 @@ class Noclip{
     }
     moveRight(){
         this.move([1,0, 0])
+    }
+    moveUp(){
+        this.move([0,1, 0])
     }
 }
 export {Noclip, Controllable}

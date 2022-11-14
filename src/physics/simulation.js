@@ -178,13 +178,13 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
-   // this.objects.forEach((object) => object.updateInverseInertia());
+    this.objects.forEach((object) => object.updateInverseInertia());
     const positionSystem = new System();
     const positionConstraints = [];
 
     for (const [key, manifold] of manifolds) {
       const { contacts } = manifold;
-      if (contacts.length > 2) {
+      if (contacts.length > 1) {
         positionConstraints.push(
           ...contacts.map((c) => {
             const {
@@ -208,7 +208,7 @@ export default class Simulation {
               raLocal,
               rbLocal,
               1,
-              0.00001,
+              0.0001,
               penDepth
             );
            

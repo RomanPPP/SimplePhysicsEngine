@@ -121,7 +121,7 @@ class ContactConstraint extends Constraint {
         scale(this.body1.velocity, this.body1.mass),
         scale(this.body2.velocity, this.body2.mass)
       )
-    );
+    ) * 10;
     this.lambdaMin = 0;
   }
   updateRightPart(deltaTime) {
