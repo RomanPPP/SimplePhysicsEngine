@@ -4,5 +4,13 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js'
+  },
+  module : {
+    rules: [
+      {
+        test : /\.glsl/,
+        type : 'asset/source'
+      }
+    ]
   }
 };

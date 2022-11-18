@@ -20,7 +20,7 @@ class Constraint {
     biasFactor = 0,
     lambdaMin = -Infinity,
     lambdaMax = Infinity,
-    treshold = 0.0001
+    treshold = 0.000001
   ) {
     this.biasFactor = biasFactor;
     this.n = n;
@@ -76,6 +76,7 @@ class Constraint {
 
     
     //JMJ* = JB;B = MJ*
+    this._J = [[...this.J[0], ...this.J[1]], [...this.J[2], ...this.J[3]]]
     this.B = [
       [...this.JM[0], ...this.JM[1]],
       [...this.JM[2], ...this.JM[3]],
@@ -211,7 +212,7 @@ class Joint extends Constraint {
     super(body1, body2, null, null, null, raLocal, rbLocal, biasFactor);
     
     
-    this.treshold = 0.1;
+    this.treshold = 0.0001;
     this.reducer = 0.5;
     this.maxImpulse = 0.7;
 
@@ -264,12 +265,7 @@ class Joint extends Constraint {
       [...this.JM[0], ...this.JM[1]],
       [...this.JM[2], ...this.JM[3]],
     ];
-    this.J1 = [
-      ...J[0], ...J[1]
-    ]
-    this.J2 = [
-      ...J[2], ...J[3]
-    ]
+    this._J = [[...this.J[0], ...this.J[1]], [...this.J[2], ...this.J[3]]]
     
   }
  
@@ -282,7 +278,7 @@ class Joint extends Constraint {
     );
 
     const relativeVelocityNormalProjection = dot(relativeVelocity, n);
-    const fac = penDepth > treshold
+    const fac = penDepth**2 > treshold
     this.bias = (biasFactor  * Math.max(penDepth**2 - treshold, 0)/deltaTime) - relativeVelocityNormalProjection;
     this.bias *= fac
    
@@ -303,10 +299,12 @@ class Joint extends Constraint {
 class JointPositionConstraint extends Joint{
   updateRightPart(deltaTime){
     const { penDepth, treshold, biasFactor } = this;
-    const fac = penDepth > treshold
-    this.bias = (biasFactor  *Math.max(penDepth**2 - treshold, 0)/deltaTime)*fac
+    
+    const fac = penDepth**2 > treshold
+    this.bias = (biasFactor  * Math.max(penDepth**2 - treshold, 0)/deltaTime)*fac
   }
   applyResolvingImpulse(lambda){
+    //if(lambda < 0.1)return
     this.body1.applyPseudoImpulse(scale(this.J[0], lambda), this.ra);
     this.body2.applyPseudoImpulse(scale(this.J[2], lambda), this.rb);
   }

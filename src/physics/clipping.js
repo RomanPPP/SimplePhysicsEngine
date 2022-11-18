@@ -5,7 +5,9 @@ const isInside = (p1, p2, q) => {
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
 
-const isInClockwise = (p1, p2, p3) => {
+const isInClockwise = (points) => {
+  if(points.length < 3) return 1
+  const [p1, p2, p3] = points
   const det =
     p2[0] * p3[1] +
     p3[0] * p1[1] +

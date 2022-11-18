@@ -2,27 +2,10 @@ import { vector, m3, m4 } from "math";
 import { clip, isInClockwise } from "./clipping";
 
 const { dot, cross, normalize, sum, diff, len, scale, isNull, norm } = vector;
-const clipBias = 0.05;
+const CLIP_BIAS = 0.0005;
 const GJK_MAX_ITERATIONS_NUM = 64;
+const EPA_BIAS = 0.00001;
 
-const findClosestFace = (collider, normal) => {
-  const normals = collider.getNormalsGlobal();
-  let minDot = dot(normal, normals[0]);
-  let index = 0;
-  for (let i = 1, n = normals.length; i < n; i++) {
-    const _dot = dot(normals[i], normal);
-    if (_dot < minDot) {
-      minDot = _dot;
-      index = i;
-    }
-  }
-  const faceIndices = collider.indices[index];
-  const m = collider.getM4();
-  return [
-    faceIndices.map((i) => m4.transformPoint(m, collider.points[i])),
-    normals[index],
-  ];
-};
 const rayVsPlaneIntersec = (plane, point, direction) => {
   const [origin, normal] = plane;
   const _dot = dot(normal, direction);
@@ -32,7 +15,7 @@ const rayVsPlaneIntersec = (plane, point, direction) => {
 };
 const isPointBehindPlane = (plane, point, sign = 1) => {
   const [origin, normal] = plane;
-  return dot(normal, diff(point, origin)) * sign > 0 - clipBias;
+  return dot(normal, diff(point, origin)) * sign > 0 - CLIP_BIAS;
 };
 const pointOnPlaneProjection = (plane, point) => {
   const [origin, normal] = plane;
@@ -44,14 +27,14 @@ const pointOnPlaneProjection = (plane, point) => {
 const clipPointsBehindPlane = (plane, points, sign = 1) => {
   const [origin, normal] = plane;
 
-  return points.filter((point) => dot(normal, diff(point, origin)) * sign > 0);
+  return points.filter(
+    (point) => dot(normal, diff(point, origin)) * sign + CLIP_BIAS > 0
+  );
 };
 
 const get2DcoordsOnPlane = (i, j, point) => {
   return [dot(i, point), dot(j, point)];
 };
-
-const sutherlandHodgman = (S, C) => {};
 
 function update_simplex3(a, b, c, d, search_dir, simp_dim) {
   const n = cross(diff(this.b, this.a), diff(this.c, this.a));
@@ -240,7 +223,6 @@ const originToFaceProj = (face) => {
   return [t * normal[0], t * normal[1], t * normal[2]];
 };
 
-const TOLERANCE = 0.001;
 const MAX_NUM_FACES = 64;
 const MAX_NUM_LOOSE_EDGES = 32;
 const EPA_MAX_NUM_ITER = 64;
@@ -292,7 +274,7 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
     p = diff(p_origin2, p_origin1);
     originsMap.set(p, [p_origin1, p_origin2]);
 
-    if (dot(p, search_dir) - min_dist < 0.00001) {
+    if (dot(p, search_dir) - min_dist < EPA_BIAS) {
       const face = faces[closest_face];
 
       const point = originToFaceProj(face);
@@ -310,7 +292,6 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
       const result = baricentric(face, point);
 
       if (isNaN(result[0] + result[1] + result[2])) {
-     
         return null;
       }
 
@@ -393,65 +374,33 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
       num_faces++;
     }
   }
-  
+
   return null;
 };
 
-const _gjk = gjk.bind({});
+const gjkScope = {};
+const _gjk = gjk.bind(gjkScope);
 
 const getContactManifold = (body1, body2) => {
   const coll1 = body1.collider;
   const coll2 = body2.collider;
   const contactData = _gjk(body1, body2);
-  if (contactData) {
-    const { PA, PB, n } = contactData;
-    const nReverse = scale(n, -1);
+  if (!contactData) return null;
 
-    const [contactFace1, normal1] = findClosestFace(coll1, nReverse);
-    const [contactFace2, normal2] = findClosestFace(coll2, n);
-    const plane = [scale(sum(PA, PB), 0.5), n];
-    const projections1 = contactFace1.map((p) =>
-      pointOnPlaneProjection(plane, p)
-    );
-    const projections2 = contactFace2.map((p) =>
-      pointOnPlaneProjection(plane, p)
-    );
+  const { PA, PB, n } = contactData;
 
-    const origin = plane[0];
-    const i = vector.normalize(vector.diff(plane[0], projections1[1]));
-    const j = vector.cross(plane[1], i);
-
-    let _2d1 = projections1.map((p) =>
-      get2DcoordsOnPlane(i, j, diff(p, origin))
-    );
-    let _2d2 = projections2.map((p) =>
-      get2DcoordsOnPlane(i, j, diff(p, origin))
-    );
-
-    const dir1 = isInClockwise(_2d1[0], _2d1[1], _2d1[2]);
-    const dir2 = isInClockwise(_2d2[0], _2d2[1], _2d2[2]);
-    if (dir1 < 0) _2d1 = _2d1.map((_, i) => _2d1.at(-i));
-    if (dir2 < 0) _2d2 = _2d2.map((_, i) => _2d2.at(-i));
-    const clipped = clip(_2d1, _2d2);
+  if (coll1.type === "sphere" || coll2.type === "sphere") {
+    const rb = diff(PB, coll2.pos);
+    const ra = diff(PA, coll1.pos);
+    const penDepth = -dot(diff(PB, PA), n);
+    const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
+    const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
+    const i = [n[1] + n[2],n[2] - n[0], -n[0] - n[1]]
    
-    const _3d = clipped.map((p) =>
-      sum(origin, sum(scale(i, p[0]), scale(j, p[1])))
-    );
-
-    const features = [];
-    _3d.forEach((point) => {
-      const PA = rayVsPlaneIntersec([contactFace1[0], normal1], point, n);
-      if (!isPointBehindPlane(plane, PA, 1)) return;
-      const PB = rayVsPlaneIntersec([contactFace2[0], normal2], point, n);
-      if (!isPointBehindPlane(plane, PB, -1)) return;
-
-      const rb = diff(PB, coll2.pos);
-      const ra = diff(PA, coll1.pos);
-      const penDepth = -dot(diff(PB, PA), n);
-      const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
-      const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
-
-      features.push({
+    
+    const j = cross(scale(n, -1), i)
+    return [
+      {
         raLocal,
         rbLocal,
         ra,
@@ -464,34 +413,90 @@ const getContactManifold = (body1, body2) => {
         body2,
         i,
         j,
-      });
-    });
-
-    if (features.length === 0) {
-      const rb = diff(PB, coll2.pos);
-      const ra = diff(PA, coll1.pos);
-      const penDepth = -dot(diff(PB, PA), n);
-      const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
-      const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
-      features.push({
-        raLocal,
-        rbLocal,
-        ra,
-        rb,
-        PA,
-        PB,
-        n,
-        penDepth,
-        body1,
-        body2,
-        i,
-        j,
-      });
-    }
-
-    return features;
+      },
+    ];
   }
-  return null;
+  const nReverse = scale(n, -1);
+
+  const [contactFace1, normal1] = coll1.getClosestFaceByNormal(nReverse);
+  const [contactFace2, normal2] = coll2.getClosestFaceByNormal(n);
+  const plane = [scale(sum(PA, PB), 0.5), n];
+  const projections1 = contactFace1.map((p) =>
+    pointOnPlaneProjection(plane, p)
+  );
+  const projections2 = contactFace2.map((p) =>
+    pointOnPlaneProjection(plane, p)
+  );
+
+  const origin = plane[0];
+  const i = vector.normalize(vector.diff(plane[0], projections1[1]));
+  const j = vector.cross(plane[1], i);
+
+  let _2d1 = projections1.map((p) => get2DcoordsOnPlane(i, j, diff(p, origin)));
+  let _2d2 = projections2.map((p) => get2DcoordsOnPlane(i, j, diff(p, origin)));
+
+  const dir1 = isInClockwise(_2d1);
+  const dir2 = isInClockwise(_2d2);
+  if (dir1 < 0) _2d1 = _2d1.map((_, i) => _2d1.at(-i));
+  if (dir2 < 0) _2d2 = _2d2.map((_, i) => _2d2.at(-i));
+  const clipped = clip(_2d1, _2d2);
+
+  const _3d = clipped.map((p) =>
+    sum(origin, sum(scale(i, p[0]), scale(j, p[1])))
+  );
+
+  const features = [];
+  _3d.forEach((point) => {
+    const PA = rayVsPlaneIntersec([contactFace1[0], normal1], point, n);
+    if (!isPointBehindPlane(plane, PA, 1)) return;
+    const PB = rayVsPlaneIntersec([contactFace2[0], normal2], point, n);
+    if (!isPointBehindPlane(plane, PB, -1)) return;
+
+    const rb = diff(PB, coll2.pos);
+    const ra = diff(PA, coll1.pos);
+    const penDepth = -dot(diff(PB, PA), n);
+    const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
+    const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
+
+    features.push({
+      raLocal,
+      rbLocal,
+      ra,
+      rb,
+      PA,
+      PB,
+      n,
+      penDepth,
+      body1,
+      body2,
+      i,
+      j,
+    });
+  });
+
+  if (features.length === 0) {
+    const rb = diff(PB, coll2.pos);
+    const ra = diff(PA, coll1.pos);
+    const penDepth = -dot(diff(PB, PA), n);
+    const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
+    const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
+    features.push({
+      raLocal,
+      rbLocal,
+      ra,
+      rb,
+      PA,
+      PB,
+      n,
+      penDepth,
+      body1,
+      body2,
+      i,
+      j,
+    });
+  }
+
+  return features;
 };
 
 export {

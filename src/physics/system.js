@@ -1,4 +1,4 @@
-import { vector as vec } from "math";
+import { vector as vec3 } from "math";
 
 const vec6 = {
   dot(a, b){
@@ -199,12 +199,11 @@ export default class System {
     while(numIter > 0 ){
       for(let i = 0; i < n; i++){
         const c = constraints[i]
-        const J1 = [...c.J[0], ...c.J[1]]
-        const J2 = [...c.J[2], ...c.J[3]]
+        const J = c._J
         const b1 = Jmap[i * 2 ]
         const b2 = Jmap[i * 2 + 1]
        
-        deltaLambda[i] = (c.bias - vec6.dot(J1, Bl[b1]) - vec6.dot(J2, Bl[b2])) / d[i]
+        deltaLambda[i] = (c.bias - vec6.dot(J[0], Bl[b1]) - vec6.dot(J[1], Bl[b2])) / d[i]
         
         lambda0[i] = lambda[i]
         lambda[i] = Math.max(c.lambdaMin, Math.min(lambda0[i] + deltaLambda[i], c.lambdaMax))

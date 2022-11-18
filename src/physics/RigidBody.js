@@ -1,8 +1,8 @@
 import { EventEmitter } from "./eventEmitter";
 import { m3, vector } from "math";
-const { cross, scale, norm, sum, diff, chkV } = vector;
+const { cross, scale, norm, sum, diff } = vector;
 const prec = 0.0001;
-const stopTreshold = 0.005;
+const stopTreshold = 0.005
 class RigidBody extends EventEmitter {
   constructor(collider) {
     super();
@@ -55,7 +55,7 @@ class RigidBody extends EventEmitter {
     this.pseudoAngularV = sum(this.pseudoAngularV, v);
   }
   integrateVelocities(dt) {
-    const translation = scale(this.velocity , dt);
+    const translation = scale(this.velocity , dt*2/3);
     if (norm(translation) > stopTreshold) this.translate(translation);
     const rotation = scale(this.angularV, dt );
     if (norm(translation) > stopTreshold) this.rotate(rotation);
@@ -144,7 +144,7 @@ class RigidBody extends EventEmitter {
 class Player extends RigidBody {
   constructor() {
     super(...arguments);
-    this.friction = 0.0;
+    this.friction = 0.3;
     this.DOF = [1,1,1, 0,0,0]
   }
   applyImpulse(impulse, point) {

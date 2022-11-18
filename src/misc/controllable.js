@@ -43,20 +43,23 @@ export default class Controllable{
             
         }
         const m = m3.yRotation(this.rotationY)
-        this.rigidBody.rotate([0, -this.deltaRY,0])
+        //this.rigidBody.rotate([0, -this.deltaRY,0])
         this.deltaRY = 0
         
         const pos = [...this.rigidBody.collider.pos]
         let _m = m4.translation(pos[0], pos[1]+3, pos[2])
-        _m = m4.multiply(_m, m4.m3Tom4(this.rigidBody.collider.Rmatrix))
+        //_m = m4.multiply(_m, m4.m3Tom4(this.rigidBody.collider.Rmatrix))
         _m = m4.xRotate(_m, this.rotationX)
         _m = m4.translate(_m, ...this.camPos)
         this.camMatrix = _m
      
     }
+    getAbsoluteCamPos(){
+        return vector.sum(this.rigidBody.collider.pos, this.camPos)
+    }
     move(dir){
-        const m = this.rigidBody.collider.Rmatrix
-        this.rigidBody.applyImpulse(m3.transformPoint(m, dir), [0,0,0])
+        const m = m4.yRotation(this.rotationX)
+        this.rigidBody.applyImpulse(dir, [0,0,0])
     }
     moveForward(){
         this.move([0,0, -1])
@@ -72,7 +75,7 @@ export default class Controllable{
     }
     moveUp(){
         if(this.jumpReady){
-            this.move([0,15,0])
+            this.move([0,10,0])
             this.jumpReady = false
             setTimeout(()=>this.jumpReady = true, 1000)
         }
