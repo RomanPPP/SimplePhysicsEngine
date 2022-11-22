@@ -22,6 +22,7 @@ import {
   defaultShaders,
   pointLightShaders,
   createSphere,
+  createTruncatedCone
 } from "graphics";
 
 import MouseInput from "./src/misc/mouseInput";
@@ -55,7 +56,7 @@ prog.setContext(context).compileShaders().createUniformSetters();
 const box = new PrimitiveRenderer(createBox(1, 1, 1));
 const sphere = new PrimitiveRenderer(createSphere(1, 15, 15));
 const circle = new PrimitiveRenderer(createCircle(8, 4));
-
+const cylinder = new PrimitiveRenderer(createTruncatedCone(1,1,1,8, 1))
 const points = new PrimitiveRenderer({
   mode: gl.POINTS,
   numElements: 2,
@@ -68,6 +69,14 @@ const line = new PrimitiveRenderer({
 });
 
 box
+  .setContext(context)
+  .createVAO()
+  .setDrawer(drawer)
+  .setProgramInfo(pointLightProgramInfo)
+  .createGeometryBuffers()
+  .setAttributes()
+  .setMode(2);
+cylinder
   .setContext(context)
   .createVAO()
   .setDrawer(drawer)
@@ -132,13 +141,13 @@ const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 const cube2 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 const cube3 = { physics: new RigidBody(new Box(2, 2, 2)), sprite: box };
 const cube4 = {
-  physics: new RigidBody(new Cylinder(1, 10, 0.5)),
-  sprite: box,
+  physics: new RigidBody(new Cylinder(1,1, 0.5)),
+  sprite: cylinder,
 };
 cube2.physics.translate([0, 4.7, 0]);
 cube4.physics.translate([0, 10, -5]);
 cube3.physics.translate([0, 3, 0]);
-//cube.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
+//cube4.physics.rotate([Math.PI*0.6,Math.PI*0.3,Math.PI*0.3])
 
 cube2.physics.addAcceleration([0, -g, 0]);
 cube3.physics.addAcceleration([0, -g, 0]);

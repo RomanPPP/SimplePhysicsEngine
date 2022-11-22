@@ -9,3 +9,4 @@ src/misc/config.js
 src/misc/Entity.js
 shader.js
 test.html
+webpack.test.js

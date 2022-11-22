@@ -271,13 +271,13 @@ class Cylinder extends Collider {
   getInverseInertiaTensor(mass) {
     const { radius, height } = this;
     const i1 =
-      12 / mass  / ( 3 * radius * radius + height*height);
+      mass / 12 * (3*radius*radius + height*height)
    
     const i3 =
-      2/mass / radius / radius;
+      mass/2 *radius*radius
 
     const m = m3.multiply(
-      m3.multiply(this.Rmatrix, [i1, 0, 0, 0, i1, 0, 0, 0, i3]),
+      m3.multiply(this.Rmatrix, [1/i1, 0, 0, 0, 1/i1, 0, 0, 0, 1/i3]),
       this.RmatrixInverse
     );
 

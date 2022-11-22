@@ -100,7 +100,7 @@ export default class Simulation {
     const contactConstraints = [];
     const frictionConstraints = [];
     for (let [key, manifold] of manifolds) {
-      const useVelocityBias = manifold.contacts.length <3;
+      const useVelocityBias = manifold.contacts.length <2;
 
       manifold.contacts.forEach((c) => {
         const { body1, body2, raLocal, rbLocal, ra, rb, i, j, penDepth, n } = c;
@@ -146,7 +146,7 @@ export default class Simulation {
           null
         );
 
-        if (useVelocityBias) {
+        if (1) {
           constraint.biasFactor = 0.125;
         }
         
@@ -178,7 +178,7 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
-    this.objects.forEach((object) => object.updateInverseInertia());
+    //this.objects.forEach((object) => object.updateInverseInertia());
     const positionSystem = new System();
     const positionConstraints = [];
 

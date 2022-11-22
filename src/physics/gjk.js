@@ -1,5 +1,5 @@
 import { vector, m3, m4 } from "math";
-import { clip, isInClockwise } from "./clipping";
+import { clipFaceVsFace, isInClockwise } from "./clipping";
 
 const { dot, cross, normalize, sum, diff, len, scale, isNull, norm } = vector;
 const CLIP_BIAS = 0.0005;
@@ -416,6 +416,7 @@ const getContactManifold = (body1, body2) => {
       },
     ];
   }
+  
   const nReverse = scale(n, -1);
 
   const [contactFace1, normal1] = coll1.getClosestFaceByNormal(nReverse);
@@ -439,7 +440,7 @@ const getContactManifold = (body1, body2) => {
   const dir2 = isInClockwise(_2d2);
   if (dir1 < 0) _2d1 = _2d1.map((_, i) => _2d1.at(-i));
   if (dir2 < 0) _2d2 = _2d2.map((_, i) => _2d2.at(-i));
-  const clipped = clip(_2d1, _2d2);
+  const clipped = clipFaceVsFace(_2d1, _2d2);
 
   const _3d = clipped.map((p) =>
     sum(origin, sum(scale(i, p[0]), scale(j, p[1])))
