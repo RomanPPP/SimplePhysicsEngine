@@ -46,6 +46,7 @@ export default class Tree {
     this.root = null;
     this.leafs = {};
     this.unusedIndexes = [];
+    this.rebalanceDelay = 30
   }
   setUnchecked() {
     const stack = [this.root];
@@ -128,8 +129,8 @@ export default class Tree {
       this.root = newParent;
     }
     let index = leaf.parent;
-
-    while (index) {
+    
+    while (index ) {
       index = this.rebalance(index);
       index = index.parent;
     }
@@ -267,7 +268,7 @@ export default class Tree {
     if (!i) i = this.root;
     return iter(i);
   }
-  getHeight(leaf) {
+  /*getHeight(leaf) {
     const iter = (leaf, level) => {
       if (!leaf) {
         return level;
@@ -278,6 +279,21 @@ export default class Tree {
       return h1 > h2 ? h1 : h2;
     };
     return iter(leaf, 1);
+  }*/
+  getHeight(root){
+    if(!root) return 0
+    let height = 0
+    const queue = [root]
+    while(queue.length != 0){
+      height += 1
+      const count = queue.length
+      for(let i = 0; i < count; i++){
+        const tmp = queue.pop()
+        if(tmp.child1) queue.push(tmp.child1)
+        if(tmp.child2) queue.push(tmp.child2)
+      }
+    }
+    return height
   }
   getNodes() {
     const iter = (node, arr) => {

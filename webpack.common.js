@@ -1,10 +1,16 @@
 const path = require('path')
 module.exports = {
-  entry: './index.js',
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'main.js'
+  entry:{
+    main : {
+      import : './index.js',
+      filename : './main.js'
+    },
+    car : {
+      import : './car.js',
+      filename : './car.js'
+    }
   },
+  
   module : {
     rules: [
       {

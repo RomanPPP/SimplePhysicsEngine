@@ -58,7 +58,7 @@ class RigidBody extends EventEmitter {
     const translation = scale(this.velocity , dt);
     if (norm(translation) > stopTreshold) this.translate(translation);
     const rotation = scale(this.angularV, dt );
-    if (norm(translation) > stopTreshold) this.rotate(rotation);
+    if (norm(rotation) > stopTreshold) this.rotate(rotation);
   }
   integrateForces(dt) {
     let deltaSpeed = scale(this.acceleration, dt);
