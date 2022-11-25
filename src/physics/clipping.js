@@ -95,7 +95,9 @@ const clipPolyVsPoly = (A, B) => {
 
 const lerp = (a, b, t) => a + (b - a) * t;
 
-const clipSegmentVsSegment = (p1, p2, p3, p4) => {
+const clipSegmentVsSegment = (s1, s2) => {
+  const [p1, p2] = s1
+  const [p3, p4] = s2
   const top =
     (p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0]);
   const bottom =
@@ -144,7 +146,11 @@ const faceIntersectionsMap = {
   'poly_poly' : clipPolyVsPoly,
   'segment_poly' : clipSegmentVsPoly,
   'poly_segment' : (poly, segment) => clipSegmentVsPoly(segment, poly),
-  'segment_segment' : clipSegmentVsSegment,
+  'segment_segment' :(s1, s2) => {
+    const res = clipSegmentVsSegment(s1,s2)
+    if(res) return [res]
+    return []
+  },
   'point_poly' : clipPointVsPoly,
   'poly_point' : (poly, point) => clipPointVsPoly(point, poly),
 }

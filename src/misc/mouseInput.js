@@ -6,6 +6,7 @@ export default class MouseInput extends EventEmitter {
     this.lastX = 0;
     this.lastY = 0;
     this.enable = false;
+    this.moves = []
   }
   logMove({ offsetX, offsetY }) {
     const deltaX = offsetX - this.lastX;
@@ -13,6 +14,7 @@ export default class MouseInput extends EventEmitter {
     const deltaY = offsetY - this.lastY;
     this.lastY = offsetY;
     this.emit("move", [deltaX, deltaY]);
+    this.moves.push([deltaX, deltaY])
   }
   listen() {
     const logMove = this.logMove.bind(this);

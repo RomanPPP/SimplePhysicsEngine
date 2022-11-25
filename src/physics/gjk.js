@@ -430,8 +430,10 @@ const getContactManifold = (body1, body2) => {
   );
 
   const origin = plane[0];
-  const i = vector.normalize(vector.diff(plane[0], projections1[1]));
-  const j = vector.cross(plane[1], i);
+  const i = normalize( [n[1] + n[2],n[2] - n[0], -n[0] - n[1]])
+   
+    
+  const j = cross(scale(n, -1), i)
 
   let _2d1 = projections1.map((p) => get2DcoordsOnPlane(i, j, diff(p, origin)));
   let _2d2 = projections2.map((p) => get2DcoordsOnPlane(i, j, diff(p, origin)));
@@ -440,6 +442,7 @@ const getContactManifold = (body1, body2) => {
   const dir2 = isInClockwise(_2d2);
   if (dir1 < 0) _2d1 = _2d1.map((_, i) => _2d1.at(-i));
   if (dir2 < 0) _2d2 = _2d2.map((_, i) => _2d2.at(-i));
+  
   const clipped = clipFaceVsFace(_2d1, _2d2);
 
   const _3d = clipped.map((p) =>

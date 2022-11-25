@@ -6,7 +6,14 @@ const KEYS = {
     'd' : 'moveRight',
     ' ' : 'moveUp'
 }
-export default class Controllable{
+class Controllable{
+    constructor(){
+        this.keyInput = null
+        this.mouseInput = null
+        
+    }
+}
+export default class _Controllable{
     constructor(rigidBody){
 
         this.rigidBody = rigidBody
@@ -43,12 +50,12 @@ export default class Controllable{
             
         }
         const m = m3.yRotation(this.rotationY)
-        //this.rigidBody.rotate([0, -this.deltaRY,0])
+        this.rigidBody.rotate([0, -this.deltaRY,0])
         this.deltaRY = 0
         
         const pos = [...this.rigidBody.collider.pos]
         let _m = m4.translation(pos[0], pos[1]+3, pos[2])
-        //_m = m4.multiply(_m, m4.m3Tom4(this.rigidBody.collider.Rmatrix))
+        _m = m4.multiply(_m, m4.m3Tom4(this.rigidBody.collider.Rmatrix))
         _m = m4.xRotate(_m, this.rotationX)
         _m = m4.translate(_m, ...this.camPos)
         this.camMatrix = _m
