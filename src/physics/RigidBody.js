@@ -1,8 +1,8 @@
 import { EventEmitter } from "./eventEmitter";
 import { m3, vector } from "math";
-const { cross, scale, norm, sum, diff } = vector;
+const { cross, scale, norm, sum, diff, normalize} = vector;
 const prec = 0.0001;
-const stopTreshold = 0.005
+const stopTreshold = 0.0005
 class RigidBody extends EventEmitter {
   constructor(collider) {
     super();
@@ -119,6 +119,14 @@ class RigidBody extends EventEmitter {
   }
   addAcceleration(v) {
     this.acceleration = sum(this.acceleration, v);
+  }
+  applyAngularImpulse(radius, axis, value){
+    const dir = normalize( [axis[1] + axis[2],axis[2] - axis[0], -axis[0] - axis[1]])
+    const rad = vector.cross(dir, axis)
+    const globalDir = scale(dir, value)
+    const globalRad = scale(rad, radius)
+   
+    this.applyImpulse(globalDir, globalRad)
   }
   getExpandedAABB() {
     const aabb = this.collider.getAABB();

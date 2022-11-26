@@ -75,7 +75,7 @@ box
   .setProgramInfo(pointLightProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
-  .setMode(2);
+  .setMode(gl.TRIANGLES);
 cylinder
   .setContext(context)
   .createVAO()
@@ -130,7 +130,8 @@ import Simulation from "./src/physics/simulation";
 import { Player, RigidBody } from "./src/physics/RigidBody";
 import { Box, Cylinder, Sphere } from "./src/physics/collider";
 import { Controllable, Noclip } from "./src/misc/controllable";
-
+import Car from "./cardemo/car";
+import CarController from "./cardemo/carController";
 import {
   Joint,
   JointPositionConstraint,
@@ -142,130 +143,168 @@ const sim = new Simulation();
 
 const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
-const wheel = {
-  physics: new RigidBody(new Cylinder(2, 2, 2)),
-  sprite: cylinder,
-};
-const cube = {
-  physics: new RigidBody(new Box(1, 1, 2)),
-  sprite: box,
-};
-const cube4 = {
-  physics: new RigidBody(new Box(1, 1, 2)),
-  sprite: box,
-};
 floor.physics.translate([0, -5, 0]);
 
 floor.physics.setMass(100000000);
 //floor.physics.DOF = [0,0,0,0,0,0]
 floor.physics.static = true;
 
-sim.addObject(wheel.physics);
-
-sim.addObject(cube.physics);
-
 sim.addObject(floor.physics);
 
-const wheel1 = {
-  physics: new RigidBody(new Cylinder(1, 1, 0.5)),
-  sprite: cylinder,
-};
-const wheel2 = {
-  physics: new RigidBody(new Cylinder(1, 1, 0.5)),
-  sprite: cylinder,
-};
+const objects = [floor];
 
-const wheel3 = {
-  physics: new RigidBody(new Cylinder(1, 1, 0.5)),
-  sprite: cylinder,
-};
-const wheel4 = {
-  physics: new RigidBody(new Cylinder(1, 1, 0.5)),
-  sprite: cylinder,
-};
-wheel1.physics.addAcceleration([0, -2*g, 0]);
-wheel2.physics.addAcceleration([0, -2*g, 0]);
-wheel3.physics.addAcceleration([0, -2*g, 0]);
-wheel4.physics.addAcceleration([0, -2*g, 0]);
-sim.addObject(cube4.physics);
-sim.addObject(wheel1.physics);
-sim.addObject(wheel2.physics);
-sim.addObject(wheel3.physics);
-sim.addObject(wheel4.physics);
-
-const jointConstr = [
-  new Joint(cube4.physics, wheel1.physics, [2, -0.5, 2], [0, -0.5, 0], 0.2),
-  new Joint(cube4.physics, wheel1.physics, [1, -0.5, 2], [0, 0.5, 0], 0.2),
-  new Joint(cube4.physics, wheel2.physics, [-2, -0.5, 2], [0, 0.5, 0], 0.2),
-  new Joint(cube4.physics, wheel2.physics, [-1, -0.5, 2], [0, -0.5, 0], 0.2),
-
-  new Joint(cube4.physics, wheel3.physics, [2, -0.5, -2], [0, -0.5, 0], 0.2),
-  new Joint(cube4.physics, wheel3.physics, [1, -0.5, -2], [0, 0.5, 0], 0.2),
-  new Joint(cube4.physics, wheel4.physics, [-2, -0.5, -2], [0, 0.5, 0], 0.2),
-  new Joint(cube4.physics, wheel4.physics, [-1, -0.5, -2], [0, -0.5, 0], 0.2),
-]
-
-sim.addConstraints(jointConstr, 'ww');
-const posConstr = [
-  new JointPositionConstraint(cube4.physics, wheel1.physics, [2, -0.5, 2], [0, -0.5, 0], 0.2),
-  new JointPositionConstraint(cube4.physics, wheel1.physics, [1, -0.5, 2], [0, 0.5, 0], 0.2),
-  new JointPositionConstraint(cube4.physics, wheel2.physics, [-2, -0.5, 2], [0, 0.5, 0], 0.2),
-  new JointPositionConstraint(cube4.physics, wheel2.physics, [-1, -0.5, 2], [0, -0.5, 0], 0.2),
-
-  new JointPositionConstraint(cube4.physics, wheel3.physics, [2, -0.5, -2], [0, -0.5, 0], 0.2),
-  new JointPositionConstraint(cube4.physics, wheel3.physics, [1, -0.5, -2], [0, 0.5, 0], 0.2),
-  new JointPositionConstraint(cube4.physics, wheel4.physics, [-2, -0.5, -2], [0, 0.5, 0], 0.2),
-  new JointPositionConstraint(cube4.physics, wheel4.physics, [-1, -0.5, -2], [0, -0.5, 0], 0.2),
-
-]
-sim.addPositionConstraints(posConstr, 'ww');
-
-
-const w1Joint = jointConstr[0]
-const w1PJoint = posConstr[0]
-const w2Joint = jointConstr[2]
-const w2PJoint = posConstr[2]
-
-let wheelRotation = Math.PI/2
-
-const rotateWheels = (angle) =>{
-  const x = Math.cos(angle)
-  const z = Math.sin(angle)
-
-  w1Joint.raLocal = [1 + x, -0.5, 2+z]
-  w1PJoint.raLocal = [1 + x, -0.5, 2+z]
-  w2Joint.raLocal = [-1 -x, -0.5, 2-z]
-  w2PJoint.raLocal = [-1 -x, -0.5, 2-z]
-}
-cube4.physics.group = 2
-wheel1.physics.group = 2
-wheel2.physics.group = 2
-wheel3.physics.group = 2
-wheel4.physics.group = 2
-const objects = [wheel, cube, floor, cube4, wheel1, wheel2, wheel3, wheel4];
-
-cube.physics.group = 2;
-wheel.physics.group = 2;
-wheel.physics.rotate([Math.PI/2,0,0])
-//cube.physics.rotate([1,5,2])
-
-cube.physics.addAcceleration([0, -g, 0])
-wheel.physics.addAcceleration([0,-g,0])
-cube4.physics.addAcceleration([0,0,1])
 const player = new Noclip();
 
-player.listenKeyboard(keyInput);
-player.listenMouse(mouseInput);
-floor.physics.friction = 20
-wheel.physics.friction = 20
+//player.listenKeyboard(keyInput);
+//player.listenMouse(mouseInput);
+
+const desc = {
+  cabinXYZ: [1, 1, 2],
+  radius: 0.5,
+  wide: 0.5,
+  axises: [
+    {
+      rotatable: true,
+      //drive: true,
+      vector: [1, 0, 0],
+      position: [0.5, -0.5, 1],
+    },
+    {
+      rotatable: true,
+      //drive: true,
+      vector: [-1, 0, 0],
+      position: [-0.5, -0.5, 1],
+    },
+    {
+      drive: true,
+      vector: [1, 0, 0],
+      position: [0.5, -0.5, -1],
+    },
+    {
+      drive: true,
+      vector: [-1, 0, 0],
+      position: [-0.5, -0.5, -1],
+    },
+  ],
+};
+
+const car = new Car(desc);
+const controller = new CarController(car);
+controller.listenKeyboard(keyInput);
+controller.listenMouse(mouseInput);
+console.log(car);
+
+const cabin = { physics: car.cabin, sprite: box };
+sim.addObject(cabin.physics);
+objects.push(cabin);
+
+car.wheels.forEach(({ wheel }) => {
+  const _wheel = { physics: wheel, sprite: cylinder };
+  sim.addObject(wheel);
+  wheel.addAcceleration([0, -g, 0]);
+  wheel.setMass(0.05);
+  //wheel.friction = 5
+  objects.push(_wheel);
+});
+sim.addConstraints(car.getConstraints(), "car");
+sim.addPositionConstraints(car.getPositionConstraints(), "car");
+car.cabin.addAcceleration([0, -g, 0]);
+car.wheelAngle = (Math.PI / 2) * 0.2;
+car.rotateWheel(0.3);
+
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
-let i = 0
+let i = 0;
+
+for (let i = 0; i < 3; i++) {
+  const cube = { physics: new RigidBody(new Box(6, 2, 2)), sprite: box };
+  cube.physics.translate([10, 5 * i + 2.5, i * 0.1]);
+  cube.physics.setMass(20);
+  cube.physics.addAcceleration([0, -g, 0]);
+  sim.addObject(cube.physics);
+  objects.push(cube);
+}
+
+const cube1 = { physics: new RigidBody(new Box(10, 2, 20)), sprite: box };
+const cube2 = { physics: new RigidBody(new Box(10, 2, 20)), sprite: box };
+
+cube1.physics.translate([20, 2, -35]);
+cube2.physics.translate([20, 2, 10]);
+
+cube2.physics.rotate([0.5, 0, 0]);
+cube1.physics.rotate([-0.5, 0, 0]);
+cube1.physics.static = true;
+cube2.physics.static = true;
+cube2.physics.setMass(100000000000);
+cube1.physics.setMass(100000000000);
+cube1.physics.group = "chain";
+cube2.physics.group = "chain";
+
+sim.addObject(cube1.physics);
+sim.addObject(cube2.physics);
+cube1.physics.friction = 10;
+cube2.physics.friction = 10;
+objects.push(cube1, cube2);
+
+const chain = [];
+const _chain = [];
+for (let i = 0; i < 5; i++) {
+  const cube = { physics: new RigidBody(new Box(6, 6, 2)), sprite: box };
+  cube.physics.translate([20, 5, i * 5 - 25]);
+  //cube.physics.setMass(5);
+  cube.physics.addAcceleration([0, -g, 0]);
+  //cube.physics.friction = 2;
+  cube.physics.group = "chain";
+  _chain.push(cube.physics);
+  if (i > 0) {
+    const c = [
+      new Joint(
+        cube.physics,
+        objects.at(-1).physics,
+        [3, -3, 0],
+        [3, 3, 0],
+        0.1
+      ),
+      new Joint(
+        cube.physics,
+        objects.at(-1).physics,
+        [-3, -3, 0],
+        [-3, 3, 0],
+        0.1
+      ),
+    ];
+    chain.push(...c);
+
+    // cube.physics.static = true
+  }
+
+  sim.addObject(cube.physics);
+  objects.push(cube);
+}
+sim.addConstraints(
+  [
+    new Joint(cube1.physics, _chain[0], [3, 0, 9], [3, -3, 0], 0.1),
+    new Joint(cube1.physics, _chain[0], [-3, 0, 9], [-3, -3, 0], 0.1),
+    new Joint(cube2.physics, _chain.at(-1), [3, 0, -9], [3, 3, 0], 0.1),
+    new Joint(cube2.physics, _chain.at(-1), [-3, 0, -9], [-3, 3, 0], 0.1),
+  ],
+  "cjain"
+);
+
+sim.addConstraints(chain, "chain");
+
+const dt = 0.01666;
+const numIterations = 2;
+
 const loop = () => {
-  sim.tick(0.01666);
-  player.tick();
-  rotateWheels(wheelRotation*0.3*Math.sin(i))
-  i+=0.01
+  for (let j = 0; j < numIterations; j++) {
+    sim.tick(dt / numIterations);
+    //player.tick();
+    car.tick(dt / numIterations);
+  }
+  controller.tick();
+
+  i += 0.01;
   const curentTime = Date.now();
   const delta = curentTime - lastCall;
   fps.textContent = (1 / delta) * 1000;
@@ -274,7 +313,7 @@ const loop = () => {
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
-  const cameraMatrix = player.camMatrix;
+  const cameraMatrix = controller.getCameraMatrix();
   const { translation } = m4.decompose(cameraMatrix);
 
   objects.forEach((obj) => {
