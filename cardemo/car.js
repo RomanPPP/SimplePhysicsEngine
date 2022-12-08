@@ -4,32 +4,39 @@ import { Joint, JointPositionConstraint } from "../src/physics/constraints";
 import { vector as vec3, m3 } from "math";
 
 const bias1 = 0.2;
-const bias2 = 0.2;
+const bias2 = 0.5;
+let _id =0
 export default class Car {
-  constructor(description) {
+  constructor(description,pos, id) {
     const { cabinXYZ, axises, wide, radius } = description;
     this.cabin = new RigidBody(new Box(...cabinXYZ));
-    this.cabin.group = "car";
+    this.cabin.translate(pos)
+    this.cabin.group = `car${id}`;
     this.wheels = [];
     this.rotatableWheels = [];
     this.driveWheels = [];
+    this.handBrakeable = []
     this.wheelAngle = 0;
     this.torque = 0;
     this.maxWheelAngle = (Math.PI / 2) * 0.5;
     this.torque = 0;
+    this.acceleration = 0.3
     const cm = this.cabin.collider.Rmatrix;
     const cabin = this.cabin;
-    this.maxTorque = 3;
+    this.maxTorque = 4;
+    this.handBrake = false
+    this.gas = false
     axises.forEach((axis, i) => {
       const { friction } = axis;
       const wheel = new RigidBody(new Cylinder(radius, wide));
-      wheel.group = "car";
+      wheel.group = `car${id}`;
       wheel.rotate([0, 0, Math.PI / 2]);
       const oldRotate = wheel.rotate;
-
-      if (friction) wheel.friction = friction;
-      wheel.translate(axis.position);
       const len = wheel.collider.height;
+      if (friction) wheel.friction = friction;
+      wheel.translate(vec3.sum(pos, vec3.sum(vec3.scale(axis.vector, len/2),axis.position)));
+      
+      
       const ra1 = [...axis.position];
       const rb1 = [0, -len / 2, 0];
       const ra2 = vec3.sum(ra1, vec3.scale(axis.vector, len));
@@ -50,6 +57,7 @@ export default class Car {
         ],
       });
       if (axis.rotatable) this.rotatableWheels.push(i);
+      if (axis.handBrake) this.handBrakeable.push(i)
       if (axis.drive) this.driveWheels.push({ i, axis: axis.vector });
     });
   }
@@ -89,10 +97,12 @@ export default class Car {
   }
   correctPositions(deltaTime) {
     const cm = this.cabin.collider.Rmatrix;
+    const cabinV = m3.transformPoint(this.cabin.collider.RmatrixInverse, this.cabin.angularV)
+    
     this.wheels.forEach(({ wheel, rotatable, joints, axis }) => {
       const len = wheel.collider.height;
       const pos = joints[0].raLocal;
-      if (rotatable) return;
+     
       if (0) {
         const cos = Math.cos(this.wheelAngle);
         const sin = Math.sin(this.wheelAngle);
@@ -104,6 +114,7 @@ export default class Car {
         return;
       }
       const m = m3.multiply(m3.zRotation((-axis[0] * Math.PI) / 2), cm);
+
       const v = m3.transformPoint(
         wheel.collider.RmatrixInverse,
         wheel.angularV
@@ -112,26 +123,55 @@ export default class Car {
       _v[0] = 0;
       _v[2] = 0;
 
-      wheel.angularV = m3.transformPoint(wheel.collider.Rmatrix, _v);
-      wheel.rotate(vec3.scale(vec3.diff(wheel.angularV, v), -deltaTime));
+      wheel.angularV = m3.transformPoint(wheel.collider.Rmatrix, v)
     });
   }
+  applyHandBrake(){
+    const cm = this.cabin.collider.Rmatrix;
+    this.handBrakeable.forEach(i=>{
+      const {wheel} = this.wheels[i]
+      const v = m3.transformPoint(wheel.collider.RmatrixInverse, wheel.angularV)
+      v[1] = 0
+     
+      wheel.angularV = m3.transformPoint(wheel.collider.Rmatrix, v)
+    })
+  }
   tick(deltaTime) {
-    const { torque } = this;
+    this.correctPositions(deltaTime)
+    if(this.torque > this.maxTorque){
+      this.torque = this.maxTorque
+      
+    }
+    if(this.torque < -this.maxTorque){
+      this.torque = -this.maxTorque
+    }
 
-    if (Math.abs(torque) > 0.01) {
+    const { torque, handBrake} = this;
+
+    if (this.gas) {
       this.driveWheels.forEach(({ i, axis }) => {
         const { wheel } = this.wheels[i];
         const m = wheel.collider.Rmatrix;
-        wheel.addAngularV(
-          m3.transformPoint(m, [
+        const adjust = ((torque)**2 + this.maxTorque) * Math.sign(torque)/10
+        wheel.angularV = m3.transformPoint(m, [
             0,
-            (1 / 0.016) * deltaTime * torque * axis[0],
+          adjust * (axis[0])*20,
             0,
           ])
-        );
+        
       });
     }
-    //this.correctPositions(deltaTime)
+    else this.torque -= Math.sign(this.torque)*this.acceleration/3
+    this.gas = 0
+  }
+  accelerate(deltaTime){
+    this.gas = 1
+    this.torque += this.acceleration
+
+  }
+  decelerate(deltaTime){
+    this.gas = 1
+    this.torque -= this.acceleration
+
   }
 }

@@ -178,7 +178,7 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       this.objects[i].integrateVelocities(deltaTime);
     }
-    //this.objects.forEach((object) => object.updateInverseInertia());
+    this.objects.forEach((object) => object.updateInverseInertia());
     const positionSystem = new System();
     const positionConstraints = [];
 

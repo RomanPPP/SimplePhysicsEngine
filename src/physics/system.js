@@ -193,7 +193,7 @@ export default class System {
       d.push(constraints[i].effMass)
     }
     let flag = true
-    let numIter = 10
+    let numIter = 15
 
     const deltaLambda = new Array(n).fill(0)
     while(numIter > 0 ){

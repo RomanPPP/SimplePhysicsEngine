@@ -145,7 +145,7 @@ const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
 floor.physics.translate([0, -5, 0]);
 
-floor.physics.setMass(100000000);
+floor.physics.setMass(10000000000);
 //floor.physics.DOF = [0,0,0,0,0,0]
 floor.physics.static = true;
 
@@ -159,7 +159,7 @@ const player = new Noclip();
 //player.listenMouse(mouseInput);
 
 const desc = {
-  cabinXYZ: [1, 1, 2],
+  cabinXYZ: [1, 1, 3],
   radius: 0.5,
   wide: 0.5,
   axises: [
@@ -167,32 +167,36 @@ const desc = {
       rotatable: true,
       //drive: true,
       vector: [1, 0, 0],
-      position: [0.5, -0.5, 1],
+      position: [0.5, -0.3, 1],
     },
     {
       rotatable: true,
       //drive: true,
       vector: [-1, 0, 0],
-      position: [-0.5, -0.5, 1],
+      position: [-0.5, -0.3, 1],
     },
+
     {
+      friction: 2,
       drive: true,
+      handBrake: true,
       vector: [1, 0, 0],
-      position: [0.5, -0.5, -1],
+      position: [0.5, -0.3, -1],
     },
     {
+      friction: 2,
       drive: true,
+      handBrake: true,
       vector: [-1, 0, 0],
-      position: [-0.5, -0.5, -1],
+      position: [-0.5, -0.3, -1],
     },
   ],
 };
 
-const car = new Car(desc);
+const car = new Car(desc,[0,2,0],1);
 const controller = new CarController(car);
 controller.listenKeyboard(keyInput);
 controller.listenMouse(mouseInput);
-console.log(car);
 
 const cabin = { physics: car.cabin, sprite: box };
 sim.addObject(cabin.physics);
@@ -202,23 +206,38 @@ car.wheels.forEach(({ wheel }) => {
   const _wheel = { physics: wheel, sprite: cylinder };
   sim.addObject(wheel);
   wheel.addAcceleration([0, -g, 0]);
-  wheel.setMass(0.05);
-  //wheel.friction = 5
+
   objects.push(_wheel);
 });
-sim.addConstraints(car.getConstraints(), "car");
-sim.addPositionConstraints(car.getPositionConstraints(), "car");
+sim.addConstraints(car.getConstraints(), "car1");
+sim.addPositionConstraints(car.getPositionConstraints(), "car1");
 car.cabin.addAcceleration([0, -g, 0]);
-car.wheelAngle = (Math.PI / 2) * 0.2;
-car.rotateWheel(0.3);
+
+
+const car2 = new Car(desc, [0,0,-3],2);
+
+sim.addObject(car2.cabin);
+objects.push({ physics: car2.cabin, sprite: box });
+
+car2.wheels.forEach(({ wheel }) => {
+  const _wheel = { physics: wheel, sprite: cylinder };
+  sim.addObject(wheel);
+  wheel.addAcceleration([0, -g, 0]);
+
+  objects.push(_wheel);
+});
+sim.addConstraints(car2.getConstraints(), "car2");
+sim.addPositionConstraints(car2.getPositionConstraints(), "car2");
+car2.cabin.addAcceleration([0, -g, 0]);
+car2.cabin.translate([0, 0, -10]);
 
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
 let i = 0;
 
 for (let i = 0; i < 3; i++) {
-  const cube = { physics: new RigidBody(new Box(6, 2, 2)), sprite: box };
-  cube.physics.translate([10, 5 * i + 2.5, i * 0.1]);
+  const cube = { physics: new RigidBody(new Box(3, 3, 3)), sprite: box };
+  cube.physics.translate([10, 2 * i, i * 0.1]);
   cube.physics.setMass(20);
   cube.physics.addAcceleration([0, -g, 0]);
   sim.addObject(cube.physics);
@@ -326,31 +345,8 @@ const loop = () => {
     );
   });
 
-  circle
-    .draw(
-      {
-        u_matrix: m4.rotation(Math.PI / 2, 0, 0),
-        u_color: [1, 0.5, 0.1, 1],
-        u_worldViewPosition: cameraMatrix,
-      },
-      cameraMatrix
-    )
-    .draw(
-      {
-        u_matrix: m4.identity(),
-        u_color: [1, 0.5, 0.1, 1],
-        u_worldViewPosition: cameraMatrix,
-      },
-      cameraMatrix
-    );
-  points.draw(
-    {
-      u_matrix: m4.identity(),
-      u_color: [0, 0.5, 0.1, 1],
-      u_worldViewPosition: cameraMatrix,
-    },
-    cameraMatrix
-  );
+ 
+ 
 
   for (const [name, constraints] of sim.constraints) {
     constraints.forEach((c) => {

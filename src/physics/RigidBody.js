@@ -2,7 +2,7 @@ import { EventEmitter } from "./eventEmitter";
 import { m3, vector } from "math";
 const { cross, scale, norm, sum, diff, normalize} = vector;
 const prec = 0.0001;
-const stopTreshold = 0.0005
+const stopTreshold = 0.0025
 class RigidBody extends EventEmitter {
   constructor(collider) {
     super();

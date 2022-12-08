@@ -6,7 +6,7 @@ const KEYS = {
   d: "rotateRight",
   w: "increaseTorque",
   s: "decreaseTorque",
-  " ": "jump",
+  " ": "handbrake",
 };
 
 export default class CarController {
@@ -36,12 +36,12 @@ export default class CarController {
     this.keyInput = keyInput;
   }
   tick() {
-    this.gas = 0;
+   
     for (const key of this.keyInput.keys) {
       const actionName = KEYS[key];
       if (actionName) {
         const action = this[actionName].bind(this);
-        action();
+        action(1);
       }
     }
 
@@ -57,9 +57,7 @@ export default class CarController {
       }
     }
     this.freeWheel = 1;
-    if (!this.gas) {
-      this.car.torque = 0;
-    }
+    
   }
   getCameraMatrix() {
     const { camRotation, camOffset, car } = this;
@@ -83,11 +81,14 @@ export default class CarController {
   }
   increaseTorque() {
     this.gas = 1;
-    this.car.torque += 0.01;
+    this.car.accelerate(1)
   }
   decreaseTorque() {
     this.gas = 1;
-    this.car.torque -= 0.01;
+    this.car.decelerate(1)
+  }
+  handbrake(){
+    this.car.applyHandBrake()
   }
   jump() {
     if (!this.jumpReady) return;
