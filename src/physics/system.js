@@ -1,4 +1,4 @@
-import { vector as vec3 } from "math";
+import { vec3 } from "math";
 
 const vec6 = {
   dot(a, b){

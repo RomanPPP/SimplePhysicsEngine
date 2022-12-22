@@ -1,6 +1,6 @@
-import { vector, m4, m3, AABB } from "math";
+import { vec3, m4, m3, AABB } from "math";
 
-const { scale, sum, diff, dot, normalize } = vector;
+const { scale, sum, diff, dot, normalize } = vec3;
 
 const xAxis = [1, 0, 0];
 const yAxis = [0, 1, 0];

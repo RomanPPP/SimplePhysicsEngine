@@ -1,6 +1,6 @@
-import { vector, m3 } from "math";
+import { vec3, m3 } from "math";
 
-const { dot, cross, normalize, diff, scale, norm, sum, normSq } = vector;
+const { dot, cross, normalize, diff, scale, norm, sum, normSq } = vec3;
 const clamp = (v, min, max) => {
   if (v > min) {
     if (v < max) return v;
@@ -127,12 +127,12 @@ class ContactConstraint extends Constraint {
   updateLeftPart(deltaTime) {
     super.updateLeftPart(deltaTime);
     this.lambdaMax =
-      norm(
+      Math.max(1,norm(
         sum(
           scale(this.body1.velocity, this.body1.mass),
           scale(this.body2.velocity, this.body2.mass)
         )
-      ) * 10;
+      ) * 10);
     this.lambdaMin = 0;
   }
   updateRightPart(deltaTime) {

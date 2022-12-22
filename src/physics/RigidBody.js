@@ -1,12 +1,19 @@
 import { EventEmitter } from "./eventEmitter";
-import { m3, vector } from "math";
-const { cross, scale, norm, sum, diff, normalize} = vector;
+import { m3, vec3 } from "math";
+const { cross, scale, norm, sum, diff, normalize } = vec3;
 const prec = 0.0001;
-const stopTreshold = 0.0025
+const stopTreshold = 0.005;
 class RigidBody extends EventEmitter {
+  static config = {
+    treshold : 0.005,
+    precision : 0.0001
+  }
+  static setTreshold(treshold){
+    RigidBody.config.treshold = treshold
+  }
   constructor(collider) {
     super();
-    this.DOF = [1,1,1,1,1,1]
+    this.DOF = [1, 1, 1, 1, 1, 1];
     this.static = false;
     this.collider = collider;
     this.mass = 1;
@@ -20,30 +27,34 @@ class RigidBody extends EventEmitter {
     this.id = 1;
     this.friction = 0.5;
     this.BVlink;
-    this.oldVelocity = null
-    this.group = null
+    this.oldVelocity = null;
+    this.group = null;
+    this.needToUpdate = false
   }
-  
-  integrateRK4(dt){
-    const {acceleration, velocity, angularV} = this
-    
 
-    const _translation = scale(sum(velocity, scale(acceleration, 2/3 * dt)), dt)
-    const _rotation = scale(angularV, dt)
-    const deltaVelocity  = scale(acceleration, dt)
+  integrateRK4(dt) {
+    const { acceleration, velocity, angularV } = this;
+    const {treshold} = RigidBody.config
+    const _translation = scale(
+      sum(velocity, scale(acceleration, (2 / 3) * dt)),
+      dt
+    );
+    const _rotation = scale(angularV, dt);
+    const deltaVelocity = scale(acceleration, dt);
 
-    if (norm(_translation) > stopTreshold) this.translate(_translation);
-    
-    if (norm(_rotation) > stopTreshold) this.rotate(_rotation);
-    this.velocity = sum(velocity, deltaVelocity)
+    if (norm(_translation) > treshold) this.translate(_translation);
+
+    if (norm(_rotation) > treshold) this.rotate(_rotation);
+    this.velocity = sum(velocity, deltaVelocity);
   }
   integratePseudoVelocities(dt) {
+    const {treshold} = RigidBody.config
     const translation = scale(this.pseudoVelocity, dt);
 
-    const rotation = scale(this.pseudoAngularV, dt );
-    if (norm(translation) > stopTreshold) this.translate(translation);
+    const rotation = scale(this.pseudoAngularV, dt);
+    if (norm(translation) > treshold) this.translate(translation);
 
-    if (norm(rotation) > stopTreshold) this.rotate(rotation);
+    if (norm(rotation) > treshold) this.rotate(rotation);
 
     this.pseudoVelocity = [0, 0, 0];
     this.pseudoAngularV = [0, 0, 0];
@@ -55,14 +66,15 @@ class RigidBody extends EventEmitter {
     this.pseudoAngularV = sum(this.pseudoAngularV, v);
   }
   integrateVelocities(dt) {
-    const translation = scale(this.velocity , dt);
-    if (norm(translation) > stopTreshold) this.translate(translation);
-    const rotation = scale(this.angularV, dt );
-    if (norm(rotation) > stopTreshold) this.rotate(rotation);
+    const {treshold} = RigidBody.config
+    const translation = scale(this.velocity, dt);
+    if (norm(translation) > treshold) this.translate(translation);
+    const rotation = scale(this.angularV, dt);
+    if (norm(rotation) > treshold) this.rotate(rotation);
   }
   integrateForces(dt) {
     let deltaSpeed = scale(this.acceleration, dt);
-    
+
     this.velocity = sum(this.velocity, deltaSpeed);
   }
   updateInverseInertia() {
@@ -78,11 +90,12 @@ class RigidBody extends EventEmitter {
   translate(translation) {
     this.collider.translate(translation);
 
+    this.needToUpdate = true
     this.emit("update");
   }
   rotate(rotation) {
     this.collider.rotate(rotation);
-
+    this.needToUpdate = true
     this.emit("update");
   }
 
@@ -108,30 +121,31 @@ class RigidBody extends EventEmitter {
     this.pseudoAngularV = sum(this.pseudoAngularV, angularImpulse);
   }
   addVelocity(v) {
-  
-    
     this.velocity = sum(this.velocity, v);
   }
   addAngularV(v) {
-   
-    
     this.angularV = sum(this.angularV, v);
   }
   addAcceleration(v) {
     this.acceleration = sum(this.acceleration, v);
   }
-  applyAngularImpulse(radius, axis, value){
-    const dir = normalize( [axis[1] + axis[2],axis[2] - axis[0], -axis[0] - axis[1]])
-    const rad = vector.cross(dir, axis)
-    const globalDir = scale(dir, value)
-    const globalRad = scale(rad, radius)
-   
-    this.applyImpulse(globalDir, globalRad)
+  applyAngularImpulse(radius, axis, value) {
+    const dir = normalize([
+      axis[1] + axis[2],
+      axis[2] - axis[0],
+      -axis[0] - axis[1],
+    ]);
+    const rad = vector.cross(dir, axis);
+    const globalDir = scale(dir, value);
+    const globalRad = scale(rad, radius);
+
+    this.applyImpulse(globalDir, globalRad);
   }
   getExpandedAABB() {
+    const {precision} = RigidBody.config
     const aabb = this.collider.getAABB();
     const velocity = this.velocity;
-    const tr = [prec, prec, prec];
+    const tr = [precision, precision, precision];
     aabb.min = diff(aabb.min, tr);
     aabb.max = sum(aabb.max, tr);
 
@@ -146,14 +160,13 @@ class RigidBody extends EventEmitter {
   getAABB() {
     return this.collider.getAABB();
   }
-  
 }
 
 class Player extends RigidBody {
   constructor() {
     super(...arguments);
     this.friction = 0.3;
-    this.DOF = [1,1,1, 0,0,0]
+    this.DOF = [1, 1, 1, 0, 0, 0];
   }
   applyImpulse(impulse, point) {
     this.velocity = sum(this.velocity, scale(impulse, this.inverseMass));

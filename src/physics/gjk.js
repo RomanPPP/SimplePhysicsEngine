@@ -1,8 +1,8 @@
-import { vector, m3, m4 } from "math";
+import { vec3, m3, m4 } from "math";
 import { clipFaceVsFace, isInClockwise } from "./clipping";
 
-const { dot, cross, normalize, sum, diff, len, scale, isNull, norm } = vector;
-const CLIP_BIAS = 0.0005;
+const { dot, cross, normalize, sum, diff,  scale, isNull, norm } = vec3;
+const CLIP_BIAS = 0.1;
 const GJK_MAX_ITERATIONS_NUM = 64;
 const EPA_BIAS = 0.00001;
 

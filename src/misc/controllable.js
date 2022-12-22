@@ -1,4 +1,4 @@
-import {m3, vector, m4} from 'math'
+import {m3, vec3, m4} from 'math'
 const KEYS = {
     'w' : 'moveForward',
     's' : 'moveBackward',
@@ -6,14 +6,8 @@ const KEYS = {
     'd' : 'moveRight',
     ' ' : 'moveUp'
 }
-class Controllable{
-    constructor(){
-        this.keyInput = null
-        this.mouseInput = null
-        
-    }
-}
-export default class _Controllable{
+
+export default class Controllable{
     constructor(rigidBody){
 
         this.rigidBody = rigidBody
@@ -62,7 +56,7 @@ export default class _Controllable{
      
     }
     getAbsoluteCamPos(){
-        return vector.sum(this.rigidBody.collider.pos, this.camPos)
+        return vec3.sum(this.rigidBody.collider.pos, this.camPos)
     }
     move(dir){
         const m = m4.yRotation(this.rotationX)
@@ -129,7 +123,7 @@ class Noclip{
     }
     move(dir){
         const m = m4.m4Tom3(this.camMatrix)
-        this.camPos = vector.sum(this.camPos, m3.transformPoint(m, dir))
+        this.camPos = vec3.sum(this.camPos, m3.transformPoint(m, dir))
     }
     moveForward(){
         this.move([0,0, -1])

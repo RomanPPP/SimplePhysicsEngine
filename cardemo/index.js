@@ -1,4 +1,4 @@
-import { m4, vector } from "math";
+import { m4, vec3 } from "math";
 
 import {
   ArrayDataFromGltf,
@@ -25,8 +25,8 @@ import {
   createTruncatedCone,
 } from "graphics";
 
-import MouseInput from "./src/misc/mouseInput";
-import KeyInput from "./src/misc/keyInput";
+import MouseInput from "../src/misc/mouseInput";
+import KeyInput from "../src/misc/keyInput";
 const mouseInput = new MouseInput();
 
 mouseInput.listen();
@@ -51,7 +51,7 @@ pointLightProgramInfo
   .setContext(context)
   .compileShaders()
   .createUniformSetters();
-import prog from "./shader";
+import prog from "../shader";
 prog.setContext(context).compileShaders().createUniformSetters();
 const box = new PrimitiveRenderer(createBox(1, 1, 1));
 const sphere = new PrimitiveRenderer(createSphere(1, 15, 15));
@@ -126,21 +126,21 @@ const uniforms = {
   u_shininess: 300,
 };
 
-import Simulation from "./src/physics/simulation";
-import { Player, RigidBody } from "./src/physics/RigidBody";
-import { Box, Cylinder, Sphere } from "./src/physics/collider";
-import { Controllable, Noclip } from "./src/misc/controllable";
-import Car from "./cardemo/car";
-import CarController from "./cardemo/carController";
+import Simulation from "../src/physics/Simulation";
+import { Player, RigidBody } from "../src/physics/RigidBody";
+import { Box, Cylinder, Sphere } from "../src/physics/collider";
+import { Controllable, Noclip } from "../src/misc/controllable";
+import Car from "./car";
+import CarController from "./carController";
 import {
   Joint,
   JointPositionConstraint,
   RotationalConstraint,
-} from "./src/physics/constraints";
+} from "../src/physics/constraints";
 
 const g = 9.8;
 const sim = new Simulation();
-
+RigidBody.setTreshold(0.0005)
 const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box };
 
 floor.physics.translate([0, -5, 0]);

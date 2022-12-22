@@ -1,7 +1,6 @@
-import { m3, vector } from "math";
+import { m3, vec3 } from "math";
 
-const { distanceFromLine, norm, findFurthestPoint, sum, diff, normSq, dot } =
-  vector;
+const { distanceFromLine, norm, findFurthestPoint, sum, diff, normSq, dot } = vec3;
 
 const prec = 0.0005;
 

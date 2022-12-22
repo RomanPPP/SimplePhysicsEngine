@@ -1,7 +1,7 @@
 import { RigidBody } from "../src/physics/RigidBody";
 import { Box, Cylinder } from "../src/physics/collider";
 import { Joint, JointPositionConstraint } from "../src/physics/constraints";
-import { vector as vec3, m3 } from "math";
+import { vec3, m3 } from "math";
 
 const bias1 = 0.2;
 const bias2 = 0.5;

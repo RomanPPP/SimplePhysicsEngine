@@ -1,10 +1,10 @@
-import Tree from "./tree";
-import { vector } from "math";
+import Tree from "./Tree";
+import { vec3 } from "math";
 
 import { gjk } from "./gjk";
 
 import Manifold from "./manifold";
-import System from "./system";
+import System from "./System";
 
 import {
   Constraint,
@@ -25,6 +25,7 @@ export default class Simulation {
   constructor() {
     this.objects = [];
     this.bvh = new Tree();
+    this.staticBvh = new Tree()
     this.collisions = [];
     this.constraints = new Map();
     this.positionConstraints = new Map();
@@ -41,6 +42,16 @@ export default class Simulation {
     object.on("update", () => this.updateObjectAABB.call(this, object));
 
     this.objects.push(object);
+  }
+  addStaticObject(object){
+    const aabb = object.getExpandedAABB();
+
+    const leaf = this.staticBvh.insertLeaf(aabb, object);
+    object.BVlink = leaf;
+    object.id = this.lastId;
+    this.lastId++;
+    this.objects.push(object);
+    object.on("update", () => this.updateObjectAABB.call(this, object));
   }
   addConstraints(constraints, name) {
     this.constraints.set(name, [...constraints])
@@ -69,7 +80,9 @@ export default class Simulation {
     for (let i = 0, n = this.objects.length; i < n; i++) {
       const object = this.objects[i];
       if (object.static) continue;
-      const cols = this.bvh.getCollisions(object.BVlink);
+      const intersects = this.bvh.getCollisions(object.BVlink);
+      const intersectWithStatics = this.staticBvh.getCollisions(object.BVlink)
+      const cols = [...intersectWithStatics,...intersects]
       object.BVlink.isChecked = true;
       if (cols.length != 0)
         for (let j = 0, n = cols.length; j < n; j++) {
@@ -88,6 +101,7 @@ export default class Simulation {
     }
 
     this.bvh.setUnchecked();
+    this.staticBvh.setUnchecked()
   }
   tick(deltaTime) {
     this.updateCollisions();
@@ -113,7 +127,7 @@ export default class Simulation {
           raLocal,
           rbLocal,
           0,
-          0.00001,
+          0.005,
           penDepth,
           i,
           j
@@ -122,7 +136,7 @@ export default class Simulation {
         const fConstraint1 = new FrictionConstraint(
           body1,
           body2,
-          vector.scale(i, -1),
+          vec3.scale(i, -1),
           ra,
           rb,
           raLocal,
@@ -135,7 +149,7 @@ export default class Simulation {
         const fConstraint2 = new FrictionConstraint(
           body1,
           body2,
-          vector.scale(j, -1),
+          vec3.scale(j, -1),
           ra,
           rb,
           raLocal,

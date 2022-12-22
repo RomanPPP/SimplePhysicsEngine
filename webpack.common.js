@@ -2,11 +2,11 @@ const path = require('path')
 module.exports = {
   entry:{
     main : {
-      import : './index.js',
+      import : './ragdollDemo/index.js',
       filename : './main.js'
     },
     car : {
-      import : './car.js',
+      import : './carDemo/index.js',
       filename : './car.js'
     }
   },
