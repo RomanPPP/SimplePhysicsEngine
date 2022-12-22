@@ -49,10 +49,12 @@ export default class Tree {
     this.rebalanceDelay = 30
   }
   setUnchecked() {
+    if(!this.root)return
     const stack = [this.root];
-
+    
     while (stack.length != 0) {
       const node = stack.pop();
+      
       if (node.isLeaf) {
         node.isChecked = false;
         continue;
