@@ -61,10 +61,10 @@ box
   .setContext(context)
   .createVAO()
   .setDrawer(drawer)
-  .setProgramInfo(defaultProgramInfo)
+  .setProgramInfo(pointLightProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
-  .setMode(2);
+  .setMode(4);
 panel
   .setContext(context)
   .createVAO()
@@ -151,6 +151,7 @@ for (let i = 0; i < 6; i++) {
   cube.physics.translate([0, 1 + 3.01 * i,0 ]);
   cube.physics.setMass(200);
   cube.physics.addAcceleration([0, -g, 0]);
+  cube.physics.rotate([0, Math.PI*0.01*i, 0]);
   sim.addObject(cube.physics);
   objects.push(cube);
 
@@ -170,7 +171,7 @@ RigidBody.setTreshold(0.0005);
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
 const time = document.querySelector("#time");
-const numIter = 1
+const numIter = 10
 const startTime = Date.now()
 const loop = () => {
   

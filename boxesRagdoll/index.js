@@ -64,7 +64,7 @@ box
   .setProgramInfo(pointLightProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
-  .setMode(2);
+  .setMode(4);
 panel
   .setContext(context)
   .createVAO()
@@ -80,7 +80,7 @@ cylinder
   .setProgramInfo(defaultProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
-  .setMode(2);
+  .setMode(4);
 sphere
   .setContext(context)
   .createVAO()
@@ -88,7 +88,7 @@ sphere
   .setProgramInfo(defaultProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
-  .setMode(2);
+  .setMode(4);
 circle
   .setContext(context)
   .createVAO()
@@ -117,7 +117,7 @@ points
   .bufferData("a_position", new Float32Array([0, 0, 0]));
 
 const uniforms = {
-  u_lightWorldPosition: [30, 50, 30],
+  u_lightWorldPosition: [2, 50, -30],
   u_ambientLight: [1, 1, 0.3, 0.11],
   u_reverseLightDirection: [1, 0, 0],
   u_shininess: 300,
