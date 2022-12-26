@@ -132,8 +132,8 @@ class Box extends Collider {
       (mass / 12) * (this.max[0] * this.max[0] + this.max[1] * this.max[1]);
 
     const m = m3.multiply(
-      m3.multiply(this.Rmatrix, [1 / i1, 0, 0, 0, 1 / i2, 0, 0, 0, 1 / i3]),
-      this.RmatrixInverse
+      m3.multiply(this.RmatrixInverse, [1 / i1, 0, 0, 0, 1 / i2, 0, 0, 0, 1 / i3]),
+      this.Rmatrix
     );
 
     return m;

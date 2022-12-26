@@ -166,7 +166,9 @@ export default class System {
     const d = []
     
     const lambda0 = new Array(n).fill(0)
-
+    for(let i = 0; i < 0; i++){
+      if(constraints[i].prevLambda) lambda0[i] = constraints[i].prevLambda
+    }
 
     //BJlambda
     
@@ -193,7 +195,7 @@ export default class System {
       d.push(constraints[i].effMass)
     }
     let flag = true
-    let numIter = 15
+    let numIter = 10
 
     const deltaLambda = new Array(n).fill(0)
     while(numIter > 0 ){

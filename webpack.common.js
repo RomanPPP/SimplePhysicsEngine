@@ -8,6 +8,14 @@ module.exports = {
     car : {
       import : './carDemo/index.js',
       filename : './car.js'
+    },
+    boxes : {
+      import : './boxes/index.js',
+      filename : './boxes.js'
+    },
+    boxesRagdoll : {
+      import : './boxesRagdoll/index.js',
+      filename : './boxesRagdoll.js'
     }
   },
   
