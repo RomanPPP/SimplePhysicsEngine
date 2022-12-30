@@ -38,6 +38,7 @@ class Constraint {
     this.lambdaAcc = 0;
     this.lambdaMin = lambdaMin;
     this.lambdaMax = lambdaMax;
+    this.prevLambda = 0
   }
   updateLeftPart(deltaTime) {
     const { body1, body2, n, ra, rb } = this;

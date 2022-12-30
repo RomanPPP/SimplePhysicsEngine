@@ -161,7 +161,7 @@ export default class Simulation {
         );
 
         if (1) {
-          constraint.biasFactor = 0.1;
+          constraint.biasFactor = 0.125;
         }
         
         contactConstraints.push(constraint);
@@ -198,7 +198,10 @@ export default class Simulation {
     let ndx = 0
     for(const [key, manifold] of this.collisionManifolds){
       manifold.lambdas = []
-      manifold.contacts.forEach(c=>manifold.lambdas.push(lambda[++ndx]))
+      manifold.contacts.forEach(c=>{
+        manifold.lambdas.push(lambda[ndx])
+        ndx++
+      })
     } 
     const positionSystem = new System();
     const positionConstraints = [];

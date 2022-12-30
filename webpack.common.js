@@ -16,6 +16,14 @@ module.exports = {
     boxesRagdoll : {
       import : './boxesRagdoll/index.js',
       filename : './boxesRagdoll.js'
+    },
+    chainBoxes : {
+      import : './chainBoxes/index.js',
+      filename : './chainBoxes.js'
+    },
+    shapes : {
+      import : './shapes/index.js',
+      filename : './shapes.js'
     }
   },
   

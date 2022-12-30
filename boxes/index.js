@@ -130,30 +130,31 @@ import { Controllable, Noclip } from "../src/misc/controllable";
 
 import { Joint, JointPositionConstraint } from "../src/physics/constraints";
 
-const g = 3.8;
+const g = 9.8;
 const sim = new Simulation();
 
 const floor = { physics: new RigidBody(new Box(1000, 6, 1000)), sprite: box};
 
 const objects = [floor];
 floor.physics.translate([0,-3.5,0])
-floor.physics.setMass(1000000000000);
+floor.physics.setMass(10000000);
 
 //floor.physics.translate([0, 0, 0]);
-floor.physics.friction =0
-//floor.physics.static = true;
-//floor.physics.DOF = [1, 1, 1, 0, 0, 0];
+floor.physics.friction =10
+floor.physics.static = true;
+floor.physics.DOF = [1, 1, 1, 0, 0, 0];
 sim.addObject(floor.physics);
 
 
 for (let i = 0; i < 6; i++) {
   const cube = { physics: new RigidBody(new Box(6, 3, 6)), sprite: box, uniforms : {u_color : [0,0,1,1]} };
-  cube.physics.translate([0, 1 + 3.01 * i,0 ]);
+  cube.physics.translate([0, 1 + 3.2 * i,0 ]);
   cube.physics.setMass(200);
   cube.physics.addAcceleration([0, -g, 0]);
   cube.physics.rotate([0, Math.PI*0.01*i, 0]);
   sim.addObject(cube.physics);
   objects.push(cube);
+  cube.physics.friction = 10
 
 }
 
@@ -171,7 +172,7 @@ RigidBody.setTreshold(0.0005);
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
 const time = document.querySelector("#time");
-const numIter = 10
+const numIter = 1
 const startTime = Date.now()
 const loop = () => {
   

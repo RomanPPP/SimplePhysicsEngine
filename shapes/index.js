@@ -77,7 +77,7 @@ cylinder
   .setContext(context)
   .createVAO()
   .setDrawer(drawer)
-  .setProgramInfo(defaultProgramInfo)
+  .setProgramInfo(pointLightProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
   .setMode(4);
@@ -85,7 +85,7 @@ sphere
   .setContext(context)
   .createVAO()
   .setDrawer(drawer)
-  .setProgramInfo(defaultProgramInfo)
+  .setProgramInfo(pointLightProgramInfo)
   .createGeometryBuffers()
   .setAttributes()
   .setMode(4);
@@ -127,8 +127,9 @@ import Simulation from "../src/physics/Simulation";
 import { Player, RigidBody } from "../src/physics/RigidBody";
 import { Box, Cylinder, Sphere } from "../src/physics/collider";
 import { Controllable, Noclip } from "../src/misc/controllable";
-import Ragdoll from "./Ragdoll";
+
 import { Joint, JointPositionConstraint } from "../src/physics/constraints";
+
 
 const g = 9.8;
 const sim = new Simulation();
@@ -141,44 +142,103 @@ floor.physics.setMass(1000000000000);
 
 //floor.physics.translate([0, 0, 0]);
 floor.physics.friction = 10
-floor.physics.static = true;
-floor.physics.DOF = [1, 1, 1, 0, 0, 0];
+//floor.physics.static = true;
+floor.physics.DOF = [1, 1, 1, 1, 1, 1];
 sim.addObject(floor.physics);
 
+const wallX = 30
+const wallY = 6
+const wallZ = 3
+for(let i = 0; i < 4; i++){
+  const wall = { physics: new RigidBody(new Box(wallX, wallY + 1, wallZ)), sprite: box, uniforms : {u_color : [1,1,0,1]}};
+  wall.physics.setMass(1000000000);
 
-for (let i = 0; i < 15; i++) {
+  wall.physics.translate(m3.transformPoint(m3.yRotation(Math.PI/2 * i),[0,wallY -3 ,wallX/2]))
+  wall.physics.rotate([0, Math.PI/2 * i,0])
+  wall.physics.friction = 10
+  wall.physics.static = true;
+  wall.physics.DOF = [1, 1, 1, 1, 1, 1];
+  sim.addObject(wall.physics);
+  objects.push(wall)
+}
+/*
+const joint = { physics: new RigidBody(new Box(1, 1, 1)), sprite: box, uniforms : {u_color : [1,0,0,1]}};
+joint.physics.group = 'chain'
+//joint.physics.static = true;
+joint.physics.DOF = [1, 1, 1, 1, 1, 1];
+joint.physics.setMass(100000)
+sim.addObject(joint.physics);
+joint.physics.translate([0,20,0])
+objects.push(joint)
+const constraints = []
+const posConstraints = []
+for(let i = 0; i <2; i++){
+  const segment = { physics: new RigidBody(new Box(2, 2, 9)), sprite: box, uniforms : {u_color : [0,0,0,1]}};
+  segment.physics.group = 'chain'
+  sim.addObject(segment.physics);
+  if(i == 0){
+    const {physics} = joint
+    segment.physics.translate([0,20,-4.51])
+    segment.physics.addAcceleration([0,-g,0])
+    segment.physics.setMass(25)
+    constraints.push(new Joint(segment.physics, physics, [0,0,4.5], [0,0,0],0.1))
+   // posConstraints.push(new JointPositionConstraint(segment.physics, physics, [0,0,-1.3], [0,0,0],0.1))
+    sim.addObject(segment.physics)
+    objects.push(segment)
+    continue
+  }
+  const {physics} = objects.at(-1)
+  segment.physics.translate([0,20,-2.5 -2.55*i])
+  segment.physics.addAcceleration([0,-g,0])
+  segment.physics.addVelocity([0,-0.5,0])
+  segment.physics.setMass(25)
+  constraints.push(new Joint(segment.physics, physics, [0,0,4.5], [0,0,-3.5],0.1))
+  //posConstraints.push(new JointPositionConstraint(segment.physics, physics, [0,0,-1.3], [0,0,1.3],0.1))
+  sim.addObject(segment.physics)
+  objects.push(segment)
+}
+sim.addConstraints(constraints, 'chain')
+sim.addPositionConstraints(posConstraints, 'chain')
+*/
+
+const shapes = [
+  {
+    collider :()=>new Box(2,2,2),
+    sprite : box
+  },
+  {
+    collider : () =>new Cylinder(1,1),
+    sprite : cylinder
+  },
+ /* {
+    collider :() => new Sphere(1),
+    sprite : sphere
+  }*/
+]
+for (let i = 0; i < 45; i++) {
+  const shape = shapes[i%2]
+  const body = { physics: new RigidBody(shape.collider()), sprite: shape.sprite, uniforms : {u_color : [Math.random(),Math.random(),Math.random(),1]} };
+  body.physics.translate([0,25 ,0]);
+  body.physics.setMass(10);
+  body.physics.addAcceleration([0, -g, 0]);
+  setTimeout(()=>{
+    sim.addObject(body.physics)
+    objects.push(body);
+  },400*i)
+  
+  
+
+}
+for (let i = 0; i < 5; i++) {
     const cube = { physics: new RigidBody(new Box(3, 3, 3)), sprite: box, uniforms : {u_color : [0,0,1,1]} };
     cube.physics.translate([-2.5 + (i%5) * 3,  1 + 3.01 * (i%3), 0]);
-    cube.physics.setMass(2);
+    cube.physics.setMass(10);
     cube.physics.addAcceleration([0, -g, 0]);
     sim.addObject(cube.physics);
     objects.push(cube);
   
   }
 
-  for (let i = 0; i < 1; i++) {
-    const { parts, constraints, positionConstraints } = new Ragdoll([3, 20, 0]);
-  
-    for (const name in parts) {
-      sim.addObject(parts[name]);
-      parts[name].addAcceleration([0, -g, 0]);
-      //parts[name].addVelocity([0, 0, 15]);
-      
-      //parts[name].friction = 10;
-      let sprite = cylinder
-      if(name === 'head') {
-        sprite = sphere
-      }
-      if(name === 'body') {
-        sprite = box
-        
-      }
-      objects.push({ physics: parts[name], sprite, uniforms : {u_color : [0,0.5,0,1]} });
-    }
-    parts.head.setMass(10)
-    sim.addConstraints(constraints, "ragdoll" + i);
-    sim.addPositionConstraints(positionConstraints, "ragdol" + i);
-  }
   
 
 const player = new Noclip();
@@ -186,10 +246,10 @@ const player = new Noclip();
 
 player.listenKeyboard(keyInput);
 player.listenMouse(mouseInput);
-player.camPos = [-6,10,-15]
+player.camPos = [-15,20,-15]
 player.rotationY = -Math.PI*0.7
-player.rotationX = -0.1 * Math.PI/2
-RigidBody.setTreshold(0.00000001);
+player.rotationX = -0.4 * Math.PI/2
+RigidBody.setTreshold(0.0001);
 
 let lastCall = Date.now();
 const fps = document.querySelector("#fps");
