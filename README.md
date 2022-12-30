@@ -1,7 +1,7 @@
 # Simple JavaScript Physics Engine
 [Various objects demo](https://romanppp.github.io/SimplePhysicsEngine/shapes)
 
-![alt text](images/shapes.html_-_Google_Chrome_2022-12-30_07-30-11 (2).gif)
+![alt text](images/shapes.gif)
 [Box stack demo](https://romanppp.github.io/SimplePhysicsEngine/chainBoxes)
 
 ![alt text](images/gif1.gif)
