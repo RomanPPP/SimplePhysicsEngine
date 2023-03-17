@@ -1,30 +1,39 @@
-import { vector, m3, m4 } from "math";
+import { v3, m3, m4, vec3, Tuple } from "romanpppmath";
 import { clipFaceVsFace, isInClockwise } from "./clipping";
+import ICollider from "./models/ICollider";
+import { ContactConstraint } from "./Constraints";
 
-const { dot, cross, normalize, sum, diff, len, scale, isNull, norm } = vector;
-const CLIP_BIAS = 0.0005;
-const GJK_MAX_ITERATIONS_NUM = 64;
-const EPA_BIAS = 0.00001;
+const { dot, cross, normalize, sum, diff, scale, isNull, norm } = v3;
 
-const rayVsPlaneIntersec = (plane, point, direction) => {
+import config from "./config";
+const {CLIP_BIAS, GJK_MAX_ITERATIONS_NUM, EPA_BIAS} = config
+
+
+type plane = [vec3, vec3];
+
+const rayVsPlaneIntersec = (plane: plane, point: vec3, direction: vec3) => {
   const [origin, normal] = plane;
   const _dot = dot(normal, direction);
   const fromPointToOrigin = diff(point, origin);
   const fac = dot(fromPointToOrigin, normal) / _dot;
   return diff(point, scale(direction, fac));
 };
-const isPointBehindPlane = (plane, point, sign = 1) => {
+const isPointBehindPlane = (plane: plane, point: vec3, sign = 1) => {
   const [origin, normal] = plane;
   return dot(normal, diff(point, origin)) * sign > 0 - CLIP_BIAS;
 };
-const pointOnPlaneProjection = (plane, point) => {
+const pointOnPlaneProjection = (plane: plane, point: vec3) => {
   const [origin, normal] = plane;
   const fromPointToOrigin = diff(point, origin);
   const projAlongNormal = dot(normal, fromPointToOrigin);
 
   return diff(point, scale(normal, projAlongNormal));
 };
-const clipPointsBehindPlane = (plane, points, sign = 1) => {
+const clipPointsBehindPlane = (
+  plane: plane,
+  points: Array<vec3>,
+  sign: number = 1
+) => {
   const [origin, normal] = plane;
 
   return points.filter(
@@ -32,140 +41,157 @@ const clipPointsBehindPlane = (plane, points, sign = 1) => {
   );
 };
 
-const get2DcoordsOnPlane = (i, j, point) => {
+const get2DcoordsOnPlane = (
+  i: vec3,
+  j: vec3,
+  point: vec3
+): Tuple<number, 2> => {
   return [dot(i, point), dot(j, point)];
 };
 
-function update_simplex3(a, b, c, d, search_dir, simp_dim) {
-  const n = cross(diff(this.b, this.a), diff(this.c, this.a));
-  const AO = scale(this.a, -1);
+interface IProps {
+  a: vec3;
+  b: vec3;
+  c: vec3;
+  d: vec3;
+  search_dir: vec3;
+  simp_dim: number;
+}
 
-  this.simp_dim = 2;
-  if (dot(cross(diff(this.b, this.a), n), AO) > 0) {
-    this.c = this.a;
-    this.search_dir = cross(
-      cross(diff(this.b, this.a), AO),
-      diff(this.b, this.a)
+function update_simplex3(props: IProps) {
+  const n = cross(diff(props.b, props.a), diff(props.c, props.a));
+  const AO = scale(props.a, -1);
+
+  props.simp_dim = 2;
+  if (dot(cross(diff(props.b, props.a), n), AO) > 0) {
+    props.c = props.a;
+    props.search_dir = cross(
+      cross(diff(props.b, props.a), AO),
+      diff(props.b, props.a)
     );
     return;
   }
-  if (dot(cross(n, diff(this.c, this.a)), AO) > 0) {
-    this.b = this.a;
-    this.search_dir = cross(
-      cross(diff(this.c, this.a), AO),
-      diff(this.c, this.a)
+  if (dot(cross(n, diff(props.c, props.a)), AO) > 0) {
+    props.b = props.a;
+    props.search_dir = cross(
+      cross(diff(props.c, props.a), AO),
+      diff(props.c, props.a)
     );
     return;
   }
-  this.simp_dim = 3;
+  props.simp_dim = 3;
   if (dot(n, AO) > 0) {
-    this.d = this.c;
-    this.c = this.b;
-    this.b = this.a;
-    this.search_dir = n;
+    props.d = props.c;
+    props.c = props.b;
+    props.b = props.a;
+    props.search_dir = n;
     return;
   }
-  this.d = this.b;
-  this.b = this.a;
-  this.search_dir = scale(n, -1);
+  props.d = props.b;
+  props.b = props.a;
+  props.search_dir = scale(n, -1);
   return;
 }
-function update_simplex4(a, b, c, d, search_dir, simp_dim) {
-  const ABC = cross(diff(this.b, this.a), diff(this.c, this.a));
-  const ACD = cross(diff(this.c, this.a), diff(this.d, this.a));
-  const ADB = cross(diff(this.d, this.a), diff(this.b, this.a));
-  const AO = scale(this.a, -1);
-  this.simp_dim = 3;
+function update_simplex4(props: IProps) {
+  const ABC = cross(diff(props.b, props.a), diff(props.c, props.a));
+  const ACD = cross(diff(props.c, props.a), diff(props.d, props.a));
+  const ADB = cross(diff(props.d, props.a), diff(props.b, props.a));
+  const AO = scale(props.a, -1);
+  props.simp_dim = 3;
 
   if (dot(ABC, AO) > 0) {
-    this.d = this.c;
-    this.c = this.b;
-    this.b = this.a;
-    this.search_dir = ABC;
+    props.d = props.c;
+    props.c = props.b;
+    props.b = props.a;
+    props.search_dir = ABC;
     return false;
   }
 
   if (dot(ACD, AO) > 0) {
-    this.b = this.a;
-    this.search_dir = ACD;
+    props.b = props.a;
+    props.search_dir = ACD;
     return false;
   }
 
   if (dot(ADB, AO) > 0) {
-    this.c = this.d;
-    this.d = this.b;
-    this.b = this.a;
-    this.search_dir = ADB;
+    props.c = props.d;
+    props.d = props.b;
+    props.b = props.a;
+    props.search_dir = ADB;
     return false;
   }
   return true;
 }
-function gjk(body1, body2) {
-  const coll1 = body1.collider;
-  const coll2 = body2.collider;
-  this.a = [0, 0, 0];
-  this.b = [0, 0, 0];
-  this.c = [0, 0, 0];
-  this.d = [0, 0, 0];
-  this.search_dir = [0, 0, 0];
-  this.simp_dim = 0;
 
-  this.originsMap = new Map();
+function gjk(
+  coll1: ICollider,
+  coll2: ICollider
+): null | { PA: vec3; PB: vec3; n: vec3; positionError: number } {
+  const props: IProps = {
+    a: [0, 0, 0],
+    b: [0, 0, 0],
+    c: [0, 0, 0],
+    d: [0, 0, 0],
+    search_dir: [0, 0, 0],
+    simp_dim: 0,
+  };
+
+  const originsMap = new Map<vec3, [vec3, vec3]>();
 
   let mtv = [0, 0, 0];
 
-  this.search_dir = diff(coll1.pos, coll2.pos);
-  const c_origin1 = coll1.support(scale(this.search_dir, -1));
-  const c_origin2 = coll2.support(this.search_dir);
-  this.c = diff(c_origin2, c_origin1);
+  props.search_dir = diff(coll1.pos, coll2.pos);
+  const c_origin1 = coll1.support(scale(props.search_dir, -1));
+  const c_origin2 = coll2.support(props.search_dir);
+  props.c = diff(c_origin2, c_origin1);
 
-  this.originsMap.set(this.c, [c_origin1, c_origin2]);
+  originsMap.set(props.c, [c_origin1, c_origin2]);
 
-  this.search_dir = scale(this.c, -1);
+  props.search_dir = scale(props.c, -1);
 
-  const b_origin1 = coll1.support(scale(this.search_dir, -1));
-  const b_origin2 = coll2.support(this.search_dir);
-  this.b = diff(b_origin2, b_origin1);
+  const b_origin1 = coll1.support(scale(props.search_dir, -1));
+  const b_origin2 = coll2.support(props.search_dir);
+  props.b = diff(b_origin2, b_origin1);
 
-  this.originsMap.set(this.b, [b_origin1, b_origin2]);
+  originsMap.set(props.b, [b_origin1, b_origin2]);
 
-  if (dot(this.b, this.search_dir) < 0) {
+  if (dot(props.b, props.search_dir) < 0) {
     return null;
   }
 
-  this.search_dir = cross(
-    cross(diff(this.c, this.b), scale(this.b, -1)),
-    diff(this.c, this.b)
+  props.search_dir = cross(
+    cross(diff(props.c, props.b), scale(props.b, -1)),
+    diff(props.c, props.b)
   );
 
-  if (isNull(this.search_dir)) {
-    this.search_dir = cross(diff(this.c, this.b), [1, 0, 0]);
+  if (isNull(props.search_dir)) {
+    props.search_dir = cross(diff(props.c, props.b), [1, 0, 0]);
 
-    if (isNull(this.search_dir)) {
-      this.search_dir = cross(diff(this.c, this.b), [0, 0, -1]);
+    if (isNull(props.search_dir)) {
+      props.search_dir = cross(diff(props.c, props.b), [0, 0, -1]);
     }
   }
 
-  this.simp_dim = 2;
+  props.simp_dim = 2;
   for (let i = 0; i < GJK_MAX_ITERATIONS_NUM; ++i) {
-    const a_origin1 = coll1.support(scale(this.search_dir, -1));
-    const a_origin2 = coll2.support(this.search_dir);
-    this.a = diff(a_origin2, a_origin1);
+    const a_origin1 = coll1.support(scale(props.search_dir, -1));
+    const a_origin2 = coll2.support(props.search_dir);
+    props.a = diff(a_origin2, a_origin1);
 
-    this.originsMap.set(this.a, [a_origin1, a_origin2]);
-    if (dot(this.a, this.search_dir) < 0) return null;
+    originsMap.set(props.a, [a_origin1, a_origin2]);
+    if (dot(props.a, props.search_dir) < 0) return null;
 
-    this.simp_dim++;
-    if (this.simp_dim === 3) {
-      update_simplex3.apply(this);
-    } else if (update_simplex4.apply(this)) {
-      return EPA(this.a, this.b, this.c, this.d, this.originsMap, body1, body2);
+    props.simp_dim++;
+    if (props.simp_dim === 3) {
+      update_simplex3(props);
+    } else if (update_simplex4(props)) {
+      return EPA(props.a, props.b, props.c, props.d, originsMap, coll1, coll2);
     }
   }
   return null;
 }
 
-const baricentric = (face, point) => {
+const baricentric = (face: Tuple<vec3, 4>, point: vec3) => {
   let a11 = face[0][0];
   let a12 = face[1][0];
   let a13 = face[2][0];
@@ -213,7 +239,7 @@ const baricentric = (face, point) => {
 
   return [d1 / d, d2 / d, d3 / d];
 };
-const originToFaceProj = (face) => {
+const originToFaceProj = (face: Tuple<vec3, 4>): vec3 => {
   const normal = face[3];
   const point = face[0];
   const c = -normal[0] * point[0] - normal[1] * point[1] - normal[2] * point[2];
@@ -226,9 +252,15 @@ const originToFaceProj = (face) => {
 const MAX_NUM_FACES = 64;
 const MAX_NUM_LOOSE_EDGES = 32;
 const EPA_MAX_NUM_ITER = 64;
-const EPA = (a, b, c, d, originsMap, body1, body2) => {
-  const coll1 = body1.collider;
-  const coll2 = body2.collider;
+const EPA = (
+  a: vec3,
+  b: vec3,
+  c: vec3,
+  d: vec3,
+  originsMap: Map<vec3, [vec3, vec3]>,
+  coll1: ICollider,
+  coll2: ICollider
+): null | { PA: vec3; PB: vec3; n: vec3; positionError: number } => {
   const faces = [];
   for (let i = 0; i < 4; i++) {
     faces[i] = [];
@@ -253,9 +285,9 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
 
   let num_faces = 4;
   let closest_face = null;
-  let search_dir;
+  let search_dir: vec3;
 
-  let p;
+  let p: vec3;
   for (let iteration = 0; iteration < EPA_MAX_NUM_ITER; ++iteration) {
     let min_dist = dot(faces[0][0], faces[0][3]);
 
@@ -310,9 +342,9 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
 
       const n = normalize(scale(face[3], -dot(p, search_dir)));
       if (norm(n) < 0.01) return null;
-      const penDepth = -dot(diff(PB, PA), n);
+      const positionError = -dot(diff(PB, PA), n);
 
-      return { PA, PB, n, penDepth };
+      return { PA, PB, n, positionError };
     }
 
     const loose_edges = [];
@@ -381,59 +413,59 @@ const EPA = (a, b, c, d, originsMap, body1, body2) => {
 const gjkScope = {};
 const _gjk = gjk.bind(gjkScope);
 
-const getContactManifold = (body1, body2) => {
-  const coll1 = body1.collider;
-  const coll2 = body2.collider;
-  const contactData = _gjk(body1, body2);
-  if (!contactData) return null;
+const getContacts = (
+  coll1: ICollider,
+  coll2: ICollider
+): {
+  raLocal: vec3;
+  rbLocal: vec3;
+  ra: vec3;
+  rb: vec3;
+  PA: vec3;
+  PB: vec3;
+  n: vec3;
+  positionError: number;
+  i: vec3;
+  j: vec3;
+}[] => {
+  const contactData = gjk(coll1, coll2);
+  if (!contactData) return [];
 
-  const { PA, PB, n } = contactData;
+  const { PA, PB, n, positionError } = contactData;
 
   if (coll1.type === "sphere" || coll2.type === "sphere") {
     const rb = diff(PB, coll2.pos);
     const ra = diff(PA, coll1.pos);
-    const penDepth = -dot(diff(PB, PA), n);
+
     const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
     const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
-    const i = [n[1] + n[2],n[2] - n[0], -n[0] - n[1]]
-   
-    
-    const j = cross(scale(n, -1), i)
+    const i: vec3 = [n[1] + n[2], n[2] - n[0], -n[0] - n[1]];
+
+    const j = cross(scale(n, -1), i);
     return [
       {
-        raLocal,
-        rbLocal,
-        ra,
-        rb,
-        PA,
-        PB,
-        n,
-        penDepth,
-        body1,
-        body2,
-        i,
-        j,
-      },
+        ra, rb, n, PA, PB, positionError, i, j, raLocal, rbLocal
+      }
     ];
   }
-  
+
   const nReverse = scale(n, -1);
 
-  const [contactFace1, normal1] = coll1.getClosestFaceByNormal(nReverse);
-  const [contactFace2, normal2] = coll2.getClosestFaceByNormal(n);
-  const plane = [scale(sum(PA, PB), 0.5), n];
-  const projections1 = contactFace1.map((p) =>
+  const contactFace1 = coll1.getClosestFaceByNormal(nReverse);
+  const contactFace2 = coll2.getClosestFaceByNormal(n);
+
+  const plane: plane = [scale(sum(PA, PB), 0.5), n];
+  const projections1 = contactFace1.vertices.map((p) =>
     pointOnPlaneProjection(plane, p)
   );
-  const projections2 = contactFace2.map((p) =>
+  const projections2 = contactFace2.vertices.map((p) =>
     pointOnPlaneProjection(plane, p)
   );
 
   const origin = plane[0];
-  const i = normalize( [n[1] + n[2],n[2] - n[0], -n[0] - n[1]])
-   
-    
-  const j = cross(scale(n, -1), i)
+  const i = normalize([n[1] + n[2], n[2] - n[0], -n[0] - n[1]]);
+
+  const j = cross(scale(n, -1), i);
 
   let _2d1 = projections1.map((p) => get2DcoordsOnPlane(i, j, diff(p, origin)));
   let _2d2 = projections2.map((p) => get2DcoordsOnPlane(i, j, diff(p, origin)));
@@ -442,7 +474,7 @@ const getContactManifold = (body1, body2) => {
   const dir2 = isInClockwise(_2d2);
   if (dir1 < 0) _2d1 = _2d1.map((_, i) => _2d1.at(-i));
   if (dir2 < 0) _2d2 = _2d2.map((_, i) => _2d2.at(-i));
-  
+
   const clipped = clipFaceVsFace(_2d1, _2d2);
 
   const _3d = clipped.map((p) =>
@@ -451,60 +483,49 @@ const getContactManifold = (body1, body2) => {
 
   const features = [];
   _3d.forEach((point) => {
-    const PA = rayVsPlaneIntersec([contactFace1[0], normal1], point, n);
+    const PA = rayVsPlaneIntersec(
+      [contactFace1.vertices[0], contactFace1.normal],
+      point,
+      n
+    );
     if (!isPointBehindPlane(plane, PA, 1)) return;
-    const PB = rayVsPlaneIntersec([contactFace2[0], normal2], point, n);
+    const PB = rayVsPlaneIntersec(
+      [contactFace2.vertices[0], contactFace2.normal],
+      point,
+      n
+    );
     if (!isPointBehindPlane(plane, PB, -1)) return;
 
     const rb = diff(PB, coll2.pos);
     const ra = diff(PA, coll1.pos);
-    const penDepth = -dot(diff(PB, PA), n);
+    const positionError = -dot(diff(PB, PA), n);
     const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
     const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
 
-    features.push({
-      raLocal,
-      rbLocal,
-      ra,
-      rb,
-      PA,
-      PB,
-      n,
-      penDepth,
-      body1,
-      body2,
-      i,
-      j,
-    });
+    features.push(
+      {
+        ra, rb, n, PA, PB, positionError, i, j, raLocal, rbLocal
+      }
+    );
   });
 
   if (features.length === 0) {
     const rb = diff(PB, coll2.pos);
     const ra = diff(PA, coll1.pos);
-    const penDepth = -dot(diff(PB, PA), n);
     const raLocal = m3.transformPoint(coll1.RmatrixInverse, ra);
     const rbLocal = m3.transformPoint(coll2.RmatrixInverse, rb);
-    features.push({
-      raLocal,
-      rbLocal,
-      ra,
-      rb,
-      PA,
-      PB,
-      n,
-      penDepth,
-      body1,
-      body2,
-      i,
-      j,
-    });
+    features.push(
+      {
+        ra, rb, n, PA, PB, positionError, i, j, raLocal, rbLocal
+      }
+    );
   }
 
   return features;
 };
 
 export {
-  getContactManifold as gjk,
+  getContacts,
   pointOnPlaneProjection,
   clipPointsBehindPlane,
   get2DcoordsOnPlane,

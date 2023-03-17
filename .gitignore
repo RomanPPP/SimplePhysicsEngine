@@ -8,5 +8,5 @@ src/misc/objects.js
 src/misc/config.js
 src/misc/Entity.js
 shader.js
-test.html
+demos
 webpack.test.js

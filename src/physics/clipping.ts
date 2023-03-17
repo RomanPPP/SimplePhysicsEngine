@@ -1,11 +1,15 @@
-const isInside = (p1, p2, q) => {
+import {Tuple} from 'romanpppmath'
+
+type vec2 = Tuple<number, 2>
+
+const isInside = (p1 :vec2, p2 :vec2, q : vec2) => {
   const R = (p2[0] - p1[0]) * (q[1] - p1[1]) - (p2[1] - p1[1]) * (q[0] - p1[0]);
   return R <= 0 + 0.001;
 };
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
 
-const isInClockwise = (points) => {
+const isInClockwise = (points : Array<vec2>) => {
   if (points.length < 3) return 1;
   const [p1, p2, p3] = points;
   const det =
@@ -20,7 +24,7 @@ const isInClockwise = (points) => {
   return -1;
 };
 
-const computeIntersection = (p1, p2, p3, p4) => {
+const computeIntersection = (p1 : vec2, p2 : vec2, p3 : vec2, p4 : vec2) : vec2=> {
   if (p2[0] - p1[0] === 0) {
     const x = p1[0];
 
@@ -53,7 +57,7 @@ const computeIntersection = (p1, p2, p3, p4) => {
   return [x, y];
 };
 
-const clipPolyVsPoly = (A, B) => {
+const clipPolyVsPoly = (A : Array<vec2>, B : Array<vec2>) : Array<vec2> => {
   let result = [...A];
 
   for (let i = 0, n = B.length; i < n; i++) {
@@ -93,22 +97,22 @@ const clipPolyVsPoly = (A, B) => {
   return result;
 };
 
-const lerp = (a, b, t) => a + (b - a) * t;
+const lerp = (a : number, b : number, t : number) => a + (b - a) * t;
 
-const clipSegmentVsSegment = (s1, s2) => {
+const clipSegmentVsSegment = (s1 : Tuple<vec2, 2>, s2 :Tuple<vec2, 2>) : Array<vec2> => {
   const [p1, p2] = s1
   const [p3, p4] = s2
   const top =
     (p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0]);
   const bottom =
     (p4[1] - p3[1]) * (p2[0] - p1[0]) - (p4[0] - p3[0]) * (p2[1] - p1[1]);
-  if (!bottom) return null;
+  if (!bottom) return [];
   const t = top / bottom;
-  if (t < 0 || t > 1) return null;
-  return [lerp(p1[0], p2[0], t), lerp(p1[1], p2[1], t)];
+  if (t < 0 || t > 1) return [];
+  return [[lerp(p1[0], p2[0], t), lerp(p1[1], p2[1], t)]];
 };
 
-const clipPointVsPoly = (point, vertices) => {
+const clipPointVsPoly = (point : vec2, vertices : Array<vec2>) : Array<vec2> => {
   const x = point[0];
   const y = point[1];
 
@@ -124,44 +128,47 @@ const clipPointVsPoly = (point, vertices) => {
     if (intersect) inside = !inside;
   }
 
-  return inside;
+  return [point];
 };
-const clipSegmentVsPoly = (segment, poly) => {
+const clipSegmentVsPoly = (segment : Tuple<vec2, 2>, poly : Array<vec2>) : Array<vec2> => {
   const [p1, p2] = segment;
-  const points = [];
+  const points : Array<vec2> = [];
   if (clipPointVsPoly(p1, poly)) points.push(p1);
   if (clipPointVsPoly(p2, poly)) points.push(p2);
   if (points.length > 1) return points;
   for (let i = 0, n = poly.length; i < n; i++) {
     const q1 = poly.at(i - 1);
     const q2 = poly.at(i);
-    const intersection = clipSegmentVsSegment(p1, p2, q1, q2);
-    if (intersection) points.push(intersection);
+    const intersection = clipSegmentVsSegment([p1, p2], [q1, q2]);
+    if (intersection.length > 0) points.push(intersection[0]);
   }
   return points;
 };
 
+const pairHash = (x : number, y : number) =>
+      x === Math.max(x, y) ? x * x + y + x  : y * x  + y;
 
-const faceIntersectionsMap = {
-  'poly_poly' : clipPolyVsPoly,
-  'segment_poly' : clipSegmentVsPoly,
-  'poly_segment' : (poly, segment) => clipSegmentVsPoly(segment, poly),
-  'segment_segment' :(s1, s2) => {
-    const res = clipSegmentVsSegment(s1,s2)
-    if(res) return [res]
-    return []
-  },
-  'point_poly' : clipPointVsPoly,
-  'poly_point' : (poly, point) => clipPointVsPoly(point, poly),
-}
-const getFaceType = (face) =>{
-  if(face.length > 2) return 'poly'
-  if(face.length === 2) return 'segment'
-  return 'point'
-}
-const clipFaceVsFace = (face1, face2) =>{
-  const types = `${getFaceType(face1)}_${getFaceType(face2)}`
-  return faceIntersectionsMap[types](face1, face2) 
+const POLY = 3
+const SEGMENT = 2
+const POINT = 1
+
+const faceTypeMap : {[key : number] : (...args) => Array<vec2>} = {}
+
+faceTypeMap[pairHash(POLY,POLY)] = clipPolyVsPoly
+faceTypeMap[pairHash(SEGMENT, POLY)] = clipSegmentVsPoly
+faceTypeMap[pairHash(SEGMENT, SEGMENT)] = clipSegmentVsSegment
+faceTypeMap[pairHash(POINT, POLY)] = (face1, face2) =>clipPointVsPoly(face1[0], face2)
+
+function clipFaceVsFace (face1 : Array<vec2>, face2 : Array<vec2>){
+  
+  const type1 = Math.min(face1.length, POLY)
+  const type2 = Math.min(face2.length, POLY)
+  let args = [face1, face2]
+  if(type1 > type2){
+    return faceTypeMap[pairHash(type2, type1)](arguments[1], arguments[0])
+  }
+  return faceTypeMap[pairHash(type1, type2)](arguments[0], arguments[1])
+
 }
 
 export {

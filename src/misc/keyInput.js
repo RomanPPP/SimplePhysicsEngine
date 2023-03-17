@@ -1,4 +1,4 @@
-import { EventEmitter } from "../physics/eventEmitter";
+import  EventEmitter  from "../physics/EventEmitter.ts";
 
 export default class KeyInput extends EventEmitter {
   constructor() {

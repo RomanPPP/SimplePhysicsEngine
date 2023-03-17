@@ -1,8 +1,9 @@
-class EventEmitter {
+export default class EventEmitter {
+  events : {[key:string] : Array<Function>}
   constructor() {
     this.events = {};
   }
-  on(eventName, fn) {
+  on(eventName : string, fn : Function) {
     if (!this.events[eventName]) {
       this.events[eventName] = [];
     }
@@ -13,7 +14,7 @@ class EventEmitter {
       );
     };
   }
-  emit(eventName, data) {
+  emit(eventName : string, data? : Object) {
     if (this.events[eventName]) {
       this.events[eventName].forEach((fn) => {
         fn.call(null, data);
@@ -21,4 +22,4 @@ class EventEmitter {
     }
   }
 }
-export { EventEmitter };
+
