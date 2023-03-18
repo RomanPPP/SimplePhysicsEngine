@@ -25,7 +25,7 @@ export class Constraint implements IConstraint {
   treshold: number;
   lambdaMin: number;
   lambdaMax: number;
-
+  prevLambda : number
   readonly body1: IRigidBody;
   readonly body2: IRigidBody;
   constructor(
@@ -105,7 +105,7 @@ export class ContactConstraint implements IConstraint {
   treshold: number;
   lambdaMin: number;
   lambdaMax: number;
-
+  prevLambda : number
   readonly body1: IRigidBody;
   readonly body2: IRigidBody;
   readonly i: vec3;
@@ -190,7 +190,7 @@ export class ContactConstraint implements IConstraint {
         this.body2,
         this.ra,
         this.rb,
-        v3.scale(this.i, -1),
+        v3.scale(this.i, 1),
         this.positionError,
         this.biasFactor,
         -this.body1.friction - this.body2.friction,
@@ -202,7 +202,7 @@ export class ContactConstraint implements IConstraint {
         this.body2,
         this.ra,
         this.rb,
-        v3.scale(this.j, -1),
+        v3.scale(this.j, 1),
         this.positionError,
         this.biasFactor,
         -this.body1.friction - this.body2.friction,

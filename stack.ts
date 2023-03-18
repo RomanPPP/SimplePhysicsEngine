@@ -132,17 +132,17 @@ objectsToDraw.push(
 
 
 
-for (let i = 0; i < 15; i++) {
-  const box = { physics: new RigidBody(new Box(3, 3, 3)), sprite: cube, uniforms : {u_color : [0,0,1,1]} };
-  box.physics.translate([-2.5 + (i%5) * 3,  1 + 3.01 * (i%3), -30]);
+for (let i = 0; i < 3; i++) {
+  const box = { physics: new RigidBody(new Box(1, 3, 1)), sprite: cube, uniforms : {u_color : [0,0,1,1]} };
+  box.physics.translate([0,  1 + 3.1 * (i), 0]);
   //box.physics.translate([0,  1 + 3.01 * (i), 0]);
-  box.physics.setMass(20);
+  box.physics.setMass(2);
   box.physics.addAcceleration([0, -9, 0]);
   sim.addObject(box.physics);
   objectsToDraw.push(box);
 
 }
-
+/*
 const box = { physics: new RigidBody(new Sphere(5)), sprite: sphere, uniforms : {u_color : [0,0,1,1]} };
   box.physics.translate([0,5,0]);
   box.physics.setMass(2);
@@ -152,6 +152,7 @@ const box = { physics: new RigidBody(new Sphere(5)), sprite: sphere, uniforms : 
   sim.addObject(box.physics);
   objectsToDraw.push(box);
 /*
+
 const box2 = { physics: new RigidBody(new Box(5)), sprite: cube, uniforms : {u_color : [0,0,1,1]} };
   box2.physics.translate([0,5,0]);
   box2.physics.setMass(2);

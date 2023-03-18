@@ -1,5 +1,4 @@
 import { AABB } from "romanpppmath";
-
 const getBoundAabb = (aabb1 : AABB, aabb2 : AABB) => {
 
   const x1 = aabb1.min[0] < aabb2.min[0] ? aabb1.min[0] : aabb2.min[0];
@@ -10,7 +9,7 @@ const getBoundAabb = (aabb1 : AABB, aabb2 : AABB) => {
   const z2 = aabb1.max[2] > aabb2.max[2] ? aabb1.max[2] : aabb2.max[2];
   return new AABB([x1, y1, z1], [x2, y2, z2]);
 };
-const isCollide = (aabb1 :AABB, aabb2 : AABB) => {
+const isCollide = (aabb1 : AABB, aabb2 : AABB) => {
   if (
     aabb1.min[0] <= aabb2.max[0] &&
     aabb1.max[0] >= aabb2.min[0] &&
@@ -42,18 +41,20 @@ class Node {
     this.aabb = aabb;
     this.isLeaf = isLeaf;
     this.parent = null;
-    this.id = id
     this.child1 = null
     this.child2 = null
+    this.id = id
     this.isChecked = false;
   }
 }
 export default class Tree {
   root : Node
-  elements : Map<number, Node>
+  leafs : {}
+
   constructor() {
     this.root = null;
-    this.elements = new Map()
+    this.leafs = {};
+  
   }
   setUnchecked() {
     if(!this.root)return
@@ -70,7 +71,7 @@ export default class Tree {
       if (node.child2) stack.push(node.child2);
     }
   }
-  private getBestSibling(leaf : Node) {
+  getBestSibling(leaf : Node) {
     let potential = this.root;
     while (!potential.isLeaf) {
       const size = getSize(potential.aabb);
@@ -105,10 +106,8 @@ export default class Tree {
     }
     return potential;
   }
-  insert(aabb : AABB, id : number) {
-
+  insertLeaf(aabb : AABB, id : number) {
     const leaf = new Node(aabb, true, id);
-    this.elements.set(id, leaf)
     if (this.root === null) {
       this.root = leaf;
       this.root.parent = null;
@@ -147,17 +146,16 @@ export default class Tree {
     }
     return leaf;
   }
-  getCollisions(aabb : AABB, id : number) {
-    
-    const cols : number[] = [];
+  getCollisions(leaf : Node) {
+    const cols = [];
     const iter = (_node : Node) => {
       if (!_node) {
         return;
       }
-      if (_node.id === id) {
+      if (_node === leaf) {
         return;
       }
-      if (isCollide(aabb, _node.aabb)) {
+      if (isCollide(leaf.aabb, _node.aabb)) {
         if (_node.isLeaf && !_node.isChecked) {
           cols.push(_node.id);
         }
@@ -170,9 +168,7 @@ export default class Tree {
 
     return cols;
   }
-  remove(id : number) {
-    const leaf = this.elements.get(id)
-    if(!leaf) return
+  removeLeaf(leaf : Node) {
     if (leaf === this.root) {
       this.root = null;
       return;
@@ -199,9 +195,8 @@ export default class Tree {
       this.root = sibling;
       sibling.parent = null;
     }
-    this.elements.delete(id)
   }
-  private rebalance(leaf : Node) {
+  rebalance(leaf : Node) {
     if (!leaf) {
       return null;
     }
@@ -271,18 +266,18 @@ export default class Tree {
     }
     leaf.aabb = getBoundAabb(leaf.child1.aabb, leaf.child2.aabb);
     return leaf;
-  }
-  toArray(node : Node) {
-    const iter = (leaf : Node) => {
+  }/*
+  toArray(i) {
+    const iter = (leaf, level) => {
       if (!leaf) {
         return null;
       }
-      if (leaf.isLeaf) return leaf.id;
+      if (leaf.isLeaf) return leaf.objectLink.name;
       else return [iter(leaf.child1), iter(leaf.child2)];
     };
-    if (!node) node = this.root;
-    return iter(node);
-  }
+    if (!i) i = this.root;
+    return iter(i);
+  }*/
   /*getHeight(leaf) {
     const iter = (leaf, level) => {
       if (!leaf) {
@@ -311,7 +306,7 @@ export default class Tree {
     return height
   }
   getNodes() {
-    const iter = (node, arr) => {
+    const iter = (node : Node, arr : Node[]) => {
       arr.push(node);
       if (node.child1) iter(node.child1, arr);
       if (node.child2) iter(node.child2, arr);

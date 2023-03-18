@@ -70,6 +70,15 @@ class ConstraintEquation implements IEquation {
     const { body1, body2, ra, rb, n} = this;
   
     this.J = [v3.scale(n, -1), v3.cross(n, ra), n, v3.cross(rb, n)];
+
+    if(body1.static){
+      this.J[0] = [0,0,0]
+      this.J[1] = [0,0,0]
+    }
+    if(body2.static){
+      this.J[2] = [0,0,0]
+      this.J[3] = [0,0,0]
+    }
   /*  const dof1 = body1.dof;
     const dof2 = body2.dof;
 
@@ -150,19 +159,7 @@ class ConstraintEquation implements IEquation {
 
 class ContactEquation extends ConstraintEquation {
 
-  updateLeftPart() {
-    super.updateLeftPart();
-    this.lambdaMax = Math.max(
-      1,
-      v3.norm(
-        v3.sum(
-          v3.scale(this.body1.velocity, this.body1.mass),
-          v3.scale(this.body2.velocity, this.body2.mass)
-        )
-      ) * 10
-    );
-    this.lambdaMin = 0;
-  }
+  
   updateRightPart(dt: number) {
 
     const { body1, body2,  treshold, biasFactor, ra, rb, n, positionError } = this;

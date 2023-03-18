@@ -42,6 +42,7 @@ export default class System {
   equations : IEquation[]
   bodiesMap : Map<number, number>
   Jmap : Array<number>
+  error : number
   constructor() {
     this.equations = [];
 
@@ -85,7 +86,7 @@ export default class System {
   }
   //J * Vel
   
-  solvePGS(deltaTime? : number) : number[]{
+  solvePGS(deltaTime? : number, log:boolean = false) : number[]{
 
     
     const {Jmap, bodiesMap, equations} = this
@@ -125,6 +126,7 @@ export default class System {
  
     
     const lambda = [...lambda0]
+    const lambdaOld = [...lambda]
     for(let i = 0; i< n; i++){
       d.push(equations[i].effMass)
     }
@@ -153,7 +155,8 @@ export default class System {
       
       numIter--
     }
-   
+    if(log)document.getElementById('error').textContent = Number(norm(deltaLambda)).toString()
+    
     for(let i = 0; i < n; i++){
       equations[i].applyImpulse(lambda[i])
     }

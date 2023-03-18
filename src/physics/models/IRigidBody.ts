@@ -17,7 +17,7 @@ export default interface IRigidBody {
   group: string;
   needToUpdate: boolean;
   dof: Tuple<0 | 1, 6>;
-
+  aabbNode : any
   updateEventFunctions : Function[]
   integrateRK4(dt: number): void;
   integrateVelocities(dt: number): void;

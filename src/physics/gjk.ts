@@ -20,7 +20,9 @@ const rayVsPlaneIntersec = (plane: plane, point: vec3, direction: vec3) => {
 };
 const isPointBehindPlane = (plane: plane, point: vec3, sign = 1) => {
   const [origin, normal] = plane;
-  return dot(normal, diff(point, origin)) * sign > 0 - CLIP_BIAS;
+  let _d = dot(normal, diff(point, origin)) * sign
+  
+  return _d > 0 - CLIP_BIAS;
 };
 const pointOnPlaneProjection = (plane: plane, point: vec3) => {
   const [origin, normal] = plane;
@@ -185,6 +187,7 @@ function gjk(
     if (props.simp_dim === 3) {
       update_simplex3(props);
     } else if (update_simplex4(props)) {
+    
       return EPA(props.a, props.b, props.c, props.d, originsMap, coll1, coll2);
     }
   }
@@ -341,7 +344,7 @@ const EPA = (
       //const ra = PA.substract(coll1.pos)
 
       const n = normalize(scale(face[3], -dot(p, search_dir)));
-      if (norm(n) < 0.01) return null;
+      //if (norm(n) < 0.01) return null;
       const positionError = -dot(diff(PB, PA), n);
 
       return { PA, PB, n, positionError };
@@ -433,6 +436,7 @@ const getContacts = (
 
   const { PA, PB, n, positionError } = contactData;
 
+
   if (coll1.type === "sphere" || coll2.type === "sphere") {
     const rb = diff(PB, coll2.pos);
     const ra = diff(PA, coll1.pos);
@@ -448,7 +452,7 @@ const getContacts = (
       }
     ];
   }
-
+  
   const nReverse = scale(n, -1);
 
   const contactFace1 = coll1.getClosestFaceByNormal(nReverse);

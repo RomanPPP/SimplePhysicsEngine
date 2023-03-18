@@ -1,7 +1,8 @@
 import { AABB } from "romanpppmath";
-
-const getBoundAabb = (aabb1 : AABB, aabb2 : AABB) => {
-
+const getBoundAabb = (aabb1, aabb2) => {
+  if (!aabb1 || !aabb2) {
+    return 0;
+  }
   const x1 = aabb1.min[0] < aabb2.min[0] ? aabb1.min[0] : aabb2.min[0];
   const x2 = aabb1.max[0] > aabb2.max[0] ? aabb1.max[0] : aabb2.max[0];
   const y1 = aabb1.min[1] < aabb2.min[1] ? aabb1.min[1] : aabb2.min[1];
@@ -10,7 +11,7 @@ const getBoundAabb = (aabb1 : AABB, aabb2 : AABB) => {
   const z2 = aabb1.max[2] > aabb2.max[2] ? aabb1.max[2] : aabb2.max[2];
   return new AABB([x1, y1, z1], [x2, y2, z2]);
 };
-const isCollide = (aabb1 :AABB, aabb2 : AABB) => {
+const isCollide = (aabb1, aabb2) => {
   if (
     aabb1.min[0] <= aabb2.max[0] &&
     aabb1.max[0] >= aabb2.min[0] &&
@@ -23,7 +24,7 @@ const isCollide = (aabb1 :AABB, aabb2 : AABB) => {
   }
   return false;
 };
-const getSize = (aabb : AABB) => {
+const getSize = (aabb) => {
   const area =
     Math.abs(aabb.max[0] - aabb.min[0]) *
     Math.abs(aabb.max[1] - aabb.min[1]) *
@@ -31,29 +32,21 @@ const getSize = (aabb : AABB) => {
   return area;
 };
 class Node {
-  aabb : AABB
-  isLeaf : boolean
-  parent : Node
-  id : number
-  isChecked : boolean
-  child1 : Node
-  child2 : Node
-  constructor(aabb : AABB, isLeaf : boolean, id : number) {
+  constructor(aabb, isLeaf, gameObject) {
     this.aabb = aabb;
     this.isLeaf = isLeaf;
     this.parent = null;
-    this.id = id
-    this.child1 = null
-    this.child2 = null
+
+    this.gameObject = gameObject;
     this.isChecked = false;
   }
 }
 export default class Tree {
-  root : Node
-  elements : Map<number, Node>
   constructor() {
     this.root = null;
-    this.elements = new Map()
+    this.leafs = {};
+    this.unusedIndexes = [];
+    this.rebalanceDelay = 30
   }
   setUnchecked() {
     if(!this.root)return
@@ -70,7 +63,7 @@ export default class Tree {
       if (node.child2) stack.push(node.child2);
     }
   }
-  private getBestSibling(leaf : Node) {
+  getBestSibling(leaf) {
     let potential = this.root;
     while (!potential.isLeaf) {
       const size = getSize(potential.aabb);
@@ -79,7 +72,7 @@ export default class Tree {
       let cost = combinedSize;
       let inherCost = combinedSize - size;
 
-      let cost1 : number;
+      let cost1;
       if (potential.child1.isLeaf) {
         cost1 = getSize(potential.child1.aabb) + inherCost;
       } else {
@@ -89,7 +82,7 @@ export default class Tree {
           inherCost;
       }
 
-      let cost2 : number;
+      let cost2;
       if (potential.child2.isLeaf) {
         cost2 = getSize(potential.child2.aabb) + inherCost;
       } else {
@@ -105,10 +98,8 @@ export default class Tree {
     }
     return potential;
   }
-  insert(aabb : AABB, id : number) {
-
-    const leaf = new Node(aabb, true, id);
-    this.elements.set(id, leaf)
+  insertLeaf(aabb, gameObject) {
+    const leaf = new Node(aabb, true, gameObject);
     if (this.root === null) {
       this.root = leaf;
       this.root.parent = null;
@@ -117,7 +108,7 @@ export default class Tree {
 
     const sibling = this.getBestSibling(leaf);
     const oldParent = sibling.parent;
-    const newParent = new Node(leaf.aabb, false, null);
+    const newParent = new Node(leaf.aabb, false);
     newParent.parent = oldParent;
 
     newParent.aabb = getBoundAabb(leaf.aabb, sibling.aabb);
@@ -147,19 +138,18 @@ export default class Tree {
     }
     return leaf;
   }
-  getCollisions(aabb : AABB, id : number) {
-    
-    const cols : number[] = [];
-    const iter = (_node : Node) => {
+  getCollisions(leaf) {
+    const cols = [];
+    const iter = (_node) => {
       if (!_node) {
         return;
       }
-      if (_node.id === id) {
+      if (_node === leaf) {
         return;
       }
-      if (isCollide(aabb, _node.aabb)) {
+      if (isCollide(leaf.aabb, _node.aabb)) {
         if (_node.isLeaf && !_node.isChecked) {
-          cols.push(_node.id);
+          cols.push(_node.gameObject);
         }
         iter(_node.child1);
         iter(_node.child2);
@@ -170,16 +160,14 @@ export default class Tree {
 
     return cols;
   }
-  remove(id : number) {
-    const leaf = this.elements.get(id)
-    if(!leaf) return
+  removeLeaf(leaf) {
     if (leaf === this.root) {
       this.root = null;
       return;
     }
     const parent = leaf.parent;
     const grandParent = parent ? parent.parent : null;
-    let sibling : Node;
+    let sibling;
     if (parent.child1 === leaf) sibling = parent.child2;
     else sibling = parent.child1;
 
@@ -199,9 +187,8 @@ export default class Tree {
       this.root = sibling;
       sibling.parent = null;
     }
-    this.elements.delete(id)
   }
-  private rebalance(leaf : Node) {
+  rebalance(leaf) {
     if (!leaf) {
       return null;
     }
@@ -272,16 +259,16 @@ export default class Tree {
     leaf.aabb = getBoundAabb(leaf.child1.aabb, leaf.child2.aabb);
     return leaf;
   }
-  toArray(node : Node) {
-    const iter = (leaf : Node) => {
+  toArray(i) {
+    const iter = (leaf, level) => {
       if (!leaf) {
         return null;
       }
-      if (leaf.isLeaf) return leaf.id;
+      if (leaf.isLeaf) return leaf.objectLink.name;
       else return [iter(leaf.child1), iter(leaf.child2)];
     };
-    if (!node) node = this.root;
-    return iter(node);
+    if (!i) i = this.root;
+    return iter(i);
   }
   /*getHeight(leaf) {
     const iter = (leaf, level) => {
@@ -295,7 +282,7 @@ export default class Tree {
     };
     return iter(leaf, 1);
   }*/
-  getHeight(root : Node){
+  getHeight(root){
     if(!root) return 0
     let height = 0
     const queue = [root]

@@ -20,7 +20,7 @@ class RigidBody extends EventEmitter implements IRigidBody {
   group: string;
   dof : Tuple<0 | 1, 6>
   needToUpdate: boolean;
-
+  aabbNode : null
   updateEventFunctions : Function[]
   static config = {
     RIGID_BODY_MOVE_TRESHOLD : 0.005,
@@ -29,7 +29,7 @@ class RigidBody extends EventEmitter implements IRigidBody {
   static setRIGID_BODY_MOVE_TRESHOLD(RIGID_BODY_MOVE_TRESHOLD : number){
     RigidBody.config.RIGID_BODY_MOVE_TRESHOLD = RIGID_BODY_MOVE_TRESHOLD
   }
-  static lastId = 0
+  static lastId = 1
   constructor(collider : ICollider) {
     super();
     this.static = false;
@@ -43,7 +43,7 @@ class RigidBody extends EventEmitter implements IRigidBody {
     this.angularV = [0, 0, 0];
     this.inverseInertia = collider.getInverseInertiaTensor(this.mass);
     this.id = RigidBody.lastId++;
-    this.friction = 0.5;
+    this.friction = 5;
     this.updateEventFunctions = []
 
     this.group = null;

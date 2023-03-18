@@ -31,6 +31,7 @@ export default class Simulation {
   positionConstraints: Map<string, IEquation[]>;
   collisions: ContactConstraint[];
   collisionManifolds: Map<number, Manifold>;
+  broadPhaseCollisions : [number, number[]][]
   constructor() {
     this.objects = new Map();
     this.tree = new Tree();
@@ -75,6 +76,7 @@ export default class Simulation {
   }
 
   updateCollisions() {
+    this.broadPhaseCollisions = []
     const { collisionManifolds, tree, staticTree, objects } = this;
     for (const [hash, manifold] of collisionManifolds) {
       manifold.update();
@@ -87,6 +89,7 @@ export default class Simulation {
       const intersects = tree.getCollisions(body1.getAABB(), id);
       const intersectWithStatics = staticTree.getCollisions(body1.getAABB(), id);
       const broadPhaseIds = [...intersectWithStatics, ...intersects];
+      this.broadPhaseCollisions.push([body1.id, broadPhaseIds])
       tree.elements.get(id).isChecked = true;
 
       if (broadPhaseIds.length != 0)
@@ -141,6 +144,7 @@ export default class Simulation {
     for (const [id, object] of objects) {
       object.integrateForces(dt);
     }
+    
     const system = new System();
     const frictionSystem = new System();
     const contactEquations = [];
@@ -160,7 +164,7 @@ export default class Simulation {
         frictionEquations.push(fEquation1, fEquation2);
       });
     }
-
+    
     system.addEquations(contactEquations);
     /*
     for (let [name, constraints] of this.constraints) {
@@ -174,8 +178,9 @@ export default class Simulation {
     frictionSystem.updateEquations(dt);
     system.updateEquations(dt)
     system.generateSystem(dt);
-    const lambda = system.solvePGS(dt);
-
+    frictionSystem.generateSystem(dt);
+    const lambda = system.solvePGS(dt,true);
+    
     const len = frictionEquations.length / 2;
     for (let i = 0; i < len; i++) {
       frictionEquations[2 * i].lambdaMin *= lambda[i];
@@ -184,22 +189,24 @@ export default class Simulation {
       frictionEquations[2 * i + 1].lambdaMax *= lambda[i];
     }
 
-    frictionSystem.generateSystem(dt);
+    
     frictionSystem.solvePGS(dt);
 
     for (const [id, object] of objects) {
       object.integrateVelocities(dt);
     }
     this.objects.forEach((object) => object.updateInverseInertia());
-    /*
+    
+    
     let ndx = 0;
     for (const [key, manifold] of this.collisionManifolds) {
-      manifold.lambdas = [];
+      
       manifold.contacts.forEach((c) => {
-        manifold.lambdas.push(lambda[ndx]);
+        c.prevLambda = lambda[ndx]
         ndx++;
       });
     }
+    /*
     const positionSystem = new System();
     const positionConstraints = [];
 

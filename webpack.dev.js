@@ -1,5 +1,4 @@
 const { merge } = require("webpack-merge");
-const common = require("./webpack.common.js");
 const CompressionPlugin = require("compression-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
@@ -22,10 +21,14 @@ module.exports = {
     ],
   },
   entry: {
-    voxels: {
+    wall: {
       import: "./test.ts",
       filename: "./test.js",
     },
+    stack : {
+      import : "./stack.ts",
+      filename : "./stack.js"
+    }
   },
   devtool: "inline-source-map",
   plugins: [
