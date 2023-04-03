@@ -8,9 +8,9 @@ import {
 
 } from "romanpppgraphics";
 
-import FreeCam from "./src/misc/FreeCam";
-import KeyInput from "./src/misc/keyInput";
-import MouseInput from "./src/misc/mouseInput";
+import FreeCam from "../../src/misc/FreeCam";
+import KeyInput from "../../src/misc/keyInput";
+import MouseInput from "../../src/misc/mouseInput";
 const mouseInput = new MouseInput();
 mouseInput.listen();
 const keyInput = new KeyInput();
@@ -20,8 +20,9 @@ const player = new FreeCam();
 
 player.listenKeyboard(keyInput);
 player.listenMouse(mouseInput);
-player.camPos = [0, 5, 15];
-
+player.camPos = [-10, 15, 20];
+player.rotationX = - Math.PI * 0.1
+player.rotationY = - Math.PI * 0.1
 const gl = (document.getElementById("canvas") as HTMLCanvasElement).getContext(
   "webgl2"
 ) as WebGL2RenderingContext;
@@ -57,7 +58,7 @@ cube
   .createVAO()
   .setDrawer(drawer)
   .setProgramInfo(pointLightProgramInfo)
-  .setMode(2);
+  .setMode(4);
 
 
   const sphere = PrimitiveRenderer.fromArrayData(createSphere(1,10,10))
@@ -65,7 +66,7 @@ sphere
   .createVAO()
   .setDrawer(drawer)
   .setProgramInfo(pointLightProgramInfo)
-  .setMode(2);
+  .setMode(4);
 point
   .createVAO()
   .setDrawer(drawer)
@@ -93,21 +94,24 @@ const uniforms = {
 
 
 
-import { RigidBody } from "./src/physics/RigidBody";
+import { RigidBody } from "../../src/physics/RigidBody";
 
-import Simulation from "./src/physics/Simulation";
+import Simulation from "../../src/physics/Simulation";
 
-import { Box, Sphere } from "./src/physics/Collider";
-import IRigidBody from "./src/physics/models/IRigidBody";
+import { Box, Sphere } from "../../src/physics/Collider";
+import IRigidBody from "../../src/physics/models/IRigidBody";
 import IPrimitiveRenderer from "romanpppgraphics/lib/models/IPrimitiveRenderer";
 import { getCenter, getDiagonal } from "romanpppmath/lib/aabb";
-
+import { Constraint } from "../../src/physics/Constraints";
+import config from "../../src/physics/config";
+config.RIGID_BODY_MOVE_TRESHOLD = 0.005
+config.CONTACT_TRESHOLD = 0.01
 const sim = new Simulation();
 const body = new RigidBody(new Box(5, 5, 5));
 
 const floor = {physics : new RigidBody(new Box(100,5,100)), sprite : cube, uniforms : {u_color : [1,0,1,1]}}
 
-floor.physics.setMass(99999999999)
+floor.physics.setMass(1)
 floor.physics.static = true
 
 floor.physics.translate([0,-2.5,0])
@@ -134,23 +138,24 @@ objectsToDraw.push(
 
 for (let i = 0; i < 15; i++) {
   const box = { physics: new RigidBody(new Box(3, 3, 3)), sprite: cube, uniforms : {u_color : [0,0,1,1]} };
-  box.physics.translate([-2.5 + (i%5) * 3,  1 + 3.01 * (i%3), -30]);
+  box.physics.translate([-2.5 + (i%5) * 3,  1 + 3.01 * (i%3), 0]);
   //box.physics.translate([0,  1 + 3.01 * (i), 0]);
-  box.physics.setMass(20);
+  box.physics.setMass(5);
   box.physics.addAcceleration([0, -9, 0]);
   sim.addObject(box.physics);
   objectsToDraw.push(box);
-
 }
 
 const box = { physics: new RigidBody(new Sphere(5)), sprite: sphere, uniforms : {u_color : [0,0,1,1]} };
-  box.physics.translate([0,5,0]);
-  box.physics.setMass(2);
+  box.physics.translate([0,5,-30]);
+  box.physics.setMass(32);
   box.physics.addAcceleration([0, -9, 0]);
-  box.physics.addVelocity([0,0,-3])
+ box.physics.addVelocity([0,0,3])
   box.physics.addAngularV([1,1,1])
   sim.addObject(box.physics);
   objectsToDraw.push(box);
+
+
 /*
 const box2 = { physics: new RigidBody(new Box(5)), sprite: cube, uniforms : {u_color : [0,0,1,1]} };
   box2.physics.translate([0,5,0]);
@@ -219,20 +224,7 @@ const loop = () => {
     },
     cameraMatrix
   );
-  for(const [id, node] of sim.tree.elements){
-    const center = getCenter(node.aabb)
-    const diag = getDiagonal(node.aabb)
-    
-    cube.draw(
-      {
-        ...uniforms,
-        u_matrix : m4.scale(m4.translation(...center), ...diag),
-        u_viewWorldPosition,
-       u_color : [1,0,1,1]
-      },
-      cameraMatrix
-    );
-  }
+ 
   for (const [id, manifold] of sim.collisionManifolds) {
     manifold.contacts.forEach((contact) => {
       point

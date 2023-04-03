@@ -22,12 +22,17 @@ module.exports = {
   },
   entry: {
     wall: {
-      import: "./test.ts",
-      filename: "./test.js",
+      import: "./demo/ball/ball.ts",
+      filename: "./ball.js",
     },
+    
     stack : {
-      import : "./stack.ts",
+      import : "./demo/stack/stack.ts",
       filename : "./stack.js"
+    },
+    joints : {
+      import : "./demo/joints/joints.ts",
+      filename : "./joints.js"
     }
   },
   devtool: "inline-source-map",
@@ -37,10 +42,6 @@ module.exports = {
 
       algorithm: "gzip",
       deleteOriginalAssets: false,
-    }),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, "test.html"),
-      filename: "index.html",
     }),
   ],
 };

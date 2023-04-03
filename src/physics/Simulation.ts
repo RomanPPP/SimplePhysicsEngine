@@ -27,18 +27,19 @@ export default class Simulation {
   objects: Map<number, IRigidBody>;
   readonly tree: Tree;
   readonly staticTree: Tree;
-  constraints: Map<string, IEquation[]>;
+  constraints: Map<string, IConstraint[]>;
   positionConstraints: Map<string, IEquation[]>;
   collisions: ContactConstraint[];
   collisionManifolds: Map<number, Manifold>;
   broadPhaseCollisions : [number, number[]][]
+  useCache : boolean
   constructor() {
     this.objects = new Map();
     this.tree = new Tree();
     this.staticTree = new Tree();
     this.collisions = [];
     this.constraints = new Map();
-
+    this.useCache = true
     this.collisionManifolds = new Map();
   }
   addObject(object: IRigidBody) {
@@ -64,10 +65,10 @@ export default class Simulation {
       tree.insert(aabb, object.id);
     });
   }
-  addConstraints(constraints: IEquation[], name) {
+  addConstraints(constraints: IConstraint[], name : string) {
     this.constraints.set(name, [...constraints]);
   }
-  addPositionConstraints(constraints: IEquation[], name) {
+  addPositionConstraints(constraints: IEquation[], name : string) {
     this.positionConstraints.set(name, [...constraints]);
   }
   removeObject(object: IRigidBody) {
@@ -78,10 +79,12 @@ export default class Simulation {
   updateCollisions() {
     this.broadPhaseCollisions = []
     const { collisionManifolds, tree, staticTree, objects } = this;
+    let keep = 0
     for (const [hash, manifold] of collisionManifolds) {
       manifold.update();
       if (!manifold.keep) 
         collisionManifolds.delete(hash);
+      keep ++
     }
     for (const [id, body1] of objects) {
       if (body1.static) continue;
@@ -146,7 +149,8 @@ export default class Simulation {
     }
     
     const system = new System();
-    const frictionSystem = new System();
+    system.useCache = this.useCache
+    const frictionSystem = new System(false);
     const contactEquations = [];
     const frictionEquations = [];
     for (let [key, manifold] of collisionManifolds) {
@@ -155,7 +159,7 @@ export default class Simulation {
       manifold.contacts.forEach((contactConstraint, _i) => {
        
         const contactEquation = contactConstraint.getEquation()
-
+        
         const [fEquation1, fEquation2] = contactConstraint.getFrictionEquations()
         
        
@@ -166,32 +170,41 @@ export default class Simulation {
     }
     
     system.addEquations(contactEquations);
-    /*
+    
     for (let [name, constraints] of this.constraints) {
-      system.addConstraints(constraints);
+      const equations = []
+
+      constraints.forEach(c =>{
+        c.update()
+        const equation = c.getEquation()
+       
+        equations.push(equation)
+      })
+      system.addEquations(equations);
     }
-    */
+    
     //system.updateEquations(dt);
 
     frictionSystem.addEquations(frictionEquations);
 
-    frictionSystem.updateEquations(dt);
+    
     system.updateEquations(dt)
     system.generateSystem(dt);
-    frictionSystem.generateSystem(dt);
+    
     const lambda = system.solvePGS(dt,true);
     
-    const len = frictionEquations.length / 2;
-    for (let i = 0; i < len; i++) {
-      frictionEquations[2 * i].lambdaMin *= lambda[i];
-      frictionEquations[2 * i].lambdaMax *= lambda[i];
-      frictionEquations[2 * i + 1].lambdaMin *= lambda[i];
-      frictionEquations[2 * i + 1].lambdaMax *= lambda[i];
-    }
-
     
-    frictionSystem.solvePGS(dt);
+    const len = frictionEquations.length / 2;
+  /*for (let i = 0; i < len; i++) {
+      frictionEquations[2 * i].lambdaMin *= lambda[i];
+      frictionEquations[2 * i].lambdaMax = lambda[i];
+      frictionEquations[2 * i + 1].lambdaMin *= lambda[i];
+      frictionEquations[2 * i + 1].lambdaMax = lambda[i];
+    }*/
 
+    frictionSystem.updateEquations(dt);
+    frictionSystem.generateSystem(dt);
+    frictionSystem.solvePGS(dt);
     for (const [id, object] of objects) {
       object.integrateVelocities(dt);
     }
@@ -199,13 +212,14 @@ export default class Simulation {
     
     
     let ndx = 0;
+    /*
     for (const [key, manifold] of this.collisionManifolds) {
       
       manifold.contacts.forEach((c) => {
         c.prevLambda = lambda[ndx]
         ndx++;
       });
-    }
+    }*/
     /*
     const positionSystem = new System();
     const positionConstraints = [];

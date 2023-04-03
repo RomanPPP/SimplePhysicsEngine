@@ -57,12 +57,12 @@ class RigidBody extends EventEmitter implements IRigidBody {
       v3.sum(velocity, v3.scale(acceleration, (2 / 3) * dt)),
       dt
     );
-    const _rotation = v3.scale(angularV, dt);
+    const _rotation = v3.scale(angularV, dt/2);
     const deltaVelocity = v3.scale(acceleration, dt);
 
-    if (v3.norm(_translation) > RIGID_BODY_MOVE_TRESHOLD) this.translate(_translation);
+    if (v3.norm(_translation) > config.RIGID_BODY_MOVE_TRESHOLD) this.translate(_translation);
 
-    if (v3.norm(_rotation) > RIGID_BODY_MOVE_TRESHOLD) this.rotate(_rotation);
+    if (v3.norm(_rotation) > config.RIGID_BODY_MOVE_TRESHOLD) this.rotate(_rotation);
     this.velocity = v3.sum(velocity, deltaVelocity);
   }
   integratePseudoVelocities(dt : number) {
@@ -70,9 +70,9 @@ class RigidBody extends EventEmitter implements IRigidBody {
     const translation = v3.scale(this.pseudoVelocity, dt);
 
     const rotation = v3.scale(this.pseudoAngularV, dt);
-    if (v3.norm(translation) > RIGID_BODY_MOVE_TRESHOLD) this.translate(translation);
+    if (v3.norm(translation) > config.RIGID_BODY_MOVE_TRESHOLD) this.translate(translation);
 
-    if (v3.norm(rotation) > RIGID_BODY_MOVE_TRESHOLD) this.rotate(rotation);
+    if (v3.norm(rotation) > config.RIGID_BODY_MOVE_TRESHOLD) this.rotate(rotation);
 
     this.pseudoVelocity = [0, 0, 0];
     this.pseudoAngularV = [0, 0, 0];
@@ -84,10 +84,10 @@ class RigidBody extends EventEmitter implements IRigidBody {
     this.pseudoAngularV = v3.sum(this.pseudoAngularV, v);
   }
   integrateVelocities(dt : number) {
-    const translation = v3.scale(this.velocity, dt);
-    if (v3.norm(translation) > RIGID_BODY_MOVE_TRESHOLD) this.translate(translation);
+    const translation = v3.scale(v3.diff(this.velocity, v3.scale(this.acceleration, dt/3)), dt);
+    if (v3.norm(translation) > config.RIGID_BODY_MOVE_TRESHOLD) this.translate(translation);
     const rotation = v3.scale(this.angularV, dt/2);
-    if (v3.norm(rotation) > RIGID_BODY_MOVE_TRESHOLD) this.rotate(rotation);
+    if (v3.norm(rotation) > config.RIGID_BODY_MOVE_TRESHOLD) this.rotate(rotation);
   }
   integrateForces(dt : number) {
     let deltaSpeed = v3.scale(this.acceleration, dt);

@@ -3,6 +3,25 @@ import IEquation from "./models/IEquation";
 
 import config from "./config";
 
+
+let arr : number[] = [];
+let o = 0;
+let f = true
+const _log = (val)=> {
+  o++;
+  if(f){
+    console.log(arr)
+    f = false
+    return
+  }
+  if(o < 200 && o % 10 == 0)
+  {
+    arr.push(val)
+    
+  }
+  
+  
+ }
 const {SOLVER_ITERATIONS_NUM} =config
 type vec6 = Tuple<number, 6>
 
@@ -39,36 +58,38 @@ const norm = (v : Array<number>) : number => Math.sqrt(v.reduce((acc,el) => acc+
 
 
 export default class System {
+  static useCache = true
   equations : IEquation[]
   bodiesMap : Map<number, number>
   Jmap : Array<number>
   error : number
-  constructor() {
+  useCache : boolean
+  constructor(useCache:boolean = true) {
     this.equations = [];
 
-    
+    this.useCache = useCache
 
   }
   addEquations(equations : IEquation[] ){
     this.equations.push(...equations)
   }
   generateBodyMapping(){
-    const constraints = this.equations
-    const n = constraints.length
+    const equations = this.equations
+    const n = equations.length
     const bodiesMap = new Map()
     const Jmap = []
     let counter = 0
     for(let i = 0; i < n; i++){
-      const c = constraints[i]
-      let bodyIndex1 = bodiesMap.get(c.body1.id)
+      const eq = equations[i]
+      let bodyIndex1 = bodiesMap.get(eq.constraint.body1.id)
       if(bodyIndex1 === undefined){
         bodyIndex1 = counter++
-        bodiesMap.set(c.body1.id, bodyIndex1)
+        bodiesMap.set(eq.constraint.body1.id, bodyIndex1)
       }
-      let bodyIndex2 = bodiesMap.get(c.body2.id)
+      let bodyIndex2 = bodiesMap.get(eq.constraint.body2.id)
       if(bodyIndex2 === undefined){
         bodyIndex2 = counter++
-        bodiesMap.set(c.body2.id, bodyIndex2)
+        bodiesMap.set(eq.constraint.body2.id, bodyIndex2)
       }
       
       Jmap.push(bodyIndex1, bodyIndex2)
@@ -95,12 +116,14 @@ export default class System {
     const d = []
     
     const lambda0 = new Array(n).fill(0)
-  
-    for(let i = 0; i < 0; i++){
-      if(equations[i].prevLambda) lambda0[i] = equations[i].prevLambda
+    
+    if(this.useCache){
+      for(let i = 0; i < n; i++){
+        if(equations[i].constraint.prevLambda) lambda0[i] = equations[i].constraint.prevLambda
+      }
+      
     }
-
-    //BJlambda
+    
     
     const Bl = new Array(numBodies).fill([0,0,0,0,0,0])
     for(let i = 0; i < n; i++){
@@ -134,29 +157,31 @@ export default class System {
     let numIter = SOLVER_ITERATIONS_NUM
 
     const deltaLambda = new Array(n).fill(0)
+    let str = ''
     while(numIter > 0 ){
       for(let i = 0; i < n; i++){
-        const c = equations[i]
-        const J = c._J
+        const eq = equations[i]
+        const J = eq._J
         const b1 = Jmap[i * 2 ]
        const b2 = Jmap[i * 2 + 1]
        
-        deltaLambda[i] = (c.bias - v6.dot(J[0], Bl[b1]) - v6.dot(J[1], Bl[b2])) / d[i]
+        deltaLambda[i] = (eq.bias - v6.dot(J[0], Bl[b1]) - v6.dot(J[1], Bl[b2])) / d[i]
         
         lambda0[i] = lambda[i]
-        lambda[i] = Math.max(c.lambdaMin, Math.min(lambda0[i] + deltaLambda[i], c.lambdaMax))
+        lambda[i] = Math.max(eq.lambdaMin, Math.min(lambda0[i] + deltaLambda[i], eq.lambdaMax))
         
         deltaLambda[i] = lambda[i] - lambda0[i]
         
-        Bl[b1] = v6.sum(Bl[b1], v6.scale(c.B[0], deltaLambda[i]))
-        Bl[b2] = v6.sum(Bl[b2], v6.scale(c.B[1], deltaLambda[i]))
+        Bl[b1] = v6.sum(Bl[b1], v6.scale(eq.B[0], deltaLambda[i]))
+        Bl[b2] = v6.sum(Bl[b2], v6.scale(eq.B[1], deltaLambda[i]))
       
       }
-      
+      if(log)str += `${norm(deltaLambda)}\n`
       numIter--
     }
-    if(log)document.getElementById('error').textContent = Number(norm(deltaLambda)).toString()
     
+    if(log)document.getElementById('error').textContent =`lambda error : \n${norm(deltaLambda)}`;
+    _log(norm(deltaLambda))
     for(let i = 0; i < n; i++){
       equations[i].applyImpulse(lambda[i])
     }
